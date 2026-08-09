@@ -54,7 +54,7 @@ export default function DocumentReaderScreen() {
               <Text style={styles.metricUnit}>x10^9/L</Text>
             </View>
             <Text style={styles.metricDesc}>
-              Your white blood cell count is slightly elevated, which often indicates the body is fighting a minor infection or responding to inflammation.
+              12.5 is above the hospital-provided range shown for this report. It is labeled HIGH using that range only.
             </Text>
           </View>
 
@@ -69,7 +69,7 @@ export default function DocumentReaderScreen() {
               <Text style={styles.metricUnit}>g/dL</Text>
             </View>
             <Text style={styles.metricDesc}>
-              This level is within the healthy target range for an adult male. Your oxygen-carrying capacity is optimal.
+              14.2 falls within the hospital-provided reference range shown for this report.
             </Text>
           </View>
 
@@ -84,7 +84,7 @@ export default function DocumentReaderScreen() {
               <Text style={styles.metricUnit}>x10^9/L</Text>
             </View>
             <Text style={styles.metricDesc}>
-              Platelet levels are normal, indicating your blood can clot effectively to heal wounds.
+              245 falls within the hospital-provided reference range shown for this report.
             </Text>
           </View>
 
@@ -95,18 +95,17 @@ export default function DocumentReaderScreen() {
               <Text style={styles.summaryTitle}>Overall Summary</Text>
             </View>
             <Text style={styles.summaryText}>
-              The results are generally healthy. The slightly high WBC suggests a possible recent cold. Monitor for symptoms like fever or persistent fatigue.
+              Two displayed values are within the provided ranges and one is above its provided range. Alalay does not infer a cause or diagnosis.
             </Text>
             <TouchableOpacity style={styles.saveBtn} onPress={() => router.back()}>
-              <Text style={styles.saveBtnText}>Save to Health Vault</Text>
+              <Text style={styles.saveBtnText}>Save Explanation</Text>
             </TouchableOpacity>
           </View>
           
-          <Text style={styles.disclaimer}>
-            🛡️ AI-assisted translation. This is not a diagnosis.{'\n'}Consult your physician for medical advice.
-          </Text>
-
         </ScrollView>
+        <View style={styles.disclaimerBanner}>
+          <Text style={styles.disclaimer}>This is not medical advice - please discuss with your doctor.</Text>
+        </View>
       </View>
     </View>
   );
@@ -164,5 +163,6 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 16, borderRadius: 16, alignItems: 'center' },
   saveBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#FFFFFF' },
 
-  disclaimer: { fontFamily: 'Inter_400Regular', fontSize: 12, color: '#A0AEC0', textAlign: 'center', lineHeight: 18 }
+  disclaimerBanner: { backgroundColor: '#FFF5F5', borderTopWidth: 1, borderTopColor: '#FED7D7', paddingHorizontal: 18, paddingVertical: 13 },
+  disclaimer: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#9B2C2C', textAlign: 'center', lineHeight: 18 }
 });

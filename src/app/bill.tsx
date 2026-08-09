@@ -113,15 +113,14 @@ export default function BillReaderScreen() {
               Your PhilHealth and HMO successfully covered 72% of the total hospital bill. The remaining ₱12,700 is your out-of-pocket maximum.
             </Text>
             <TouchableOpacity style={styles.saveBtn} onPress={() => router.back()}>
-              <Text style={styles.saveBtnText}>Pay via GCash Now</Text>
+              <Text style={styles.saveBtnText}>Ask a Billing Question</Text>
             </TouchableOpacity>
           </View>
           
-          <Text style={styles.disclaimer}>
-            🛡️ AI-assisted explanation grounded in St. Luke's billing glossary.{'\n'}Verify amounts with the hospital cashier.
-          </Text>
-
         </ScrollView>
+        <View style={styles.disclaimerBanner}>
+          <Text style={styles.disclaimer}>This is for understanding only - confirm with the billing office.</Text>
+        </View>
       </View>
     </View>
   );
@@ -181,5 +180,6 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 16, borderRadius: 16, alignItems: 'center' },
   saveBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#FFFFFF' },
 
-  disclaimer: { fontFamily: 'Inter_400Regular', fontSize: 12, color: '#A0AEC0', textAlign: 'center', lineHeight: 18 }
+  disclaimerBanner: { backgroundColor: '#FFFAF0', borderTopWidth: 1, borderTopColor: '#FEEBC8', paddingHorizontal: 18, paddingVertical: 13 },
+  disclaimer: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#975A16', textAlign: 'center', lineHeight: 18 }
 });

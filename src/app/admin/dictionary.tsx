@@ -33,7 +33,7 @@ export default function AdminDictionaryScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Billing & Fee Schedules</Text>
-            <Text style={styles.cardDesc}>Provide your hospital's current room rates, triage fees, and PhilHealth case rates. This boundaries the AI so it never hallucinates costs.</Text>
+            <Text style={styles.cardDesc}>Provide your hospital's billing terms, room rates, registration fees, and PhilHealth case rates. This grounds explanations in hospital-supplied data.</Text>
           </View>
           
           {billingState === 'idle' && (

@@ -13,7 +13,7 @@ export default function ReferenceSheetScreen() {
   const beneficiaries = useStore(state => state.beneficiaries);
   
   const [activeTab, setActiveTab] = useState<'MDR' | 'CF1' | 'BEREAVEMENT'>('MDR');
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<any>(null);
 
   const sharePDF = async () => {
     try {

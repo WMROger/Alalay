@@ -174,14 +174,14 @@ export default function AdminTemplatesScreen() {
               </View>
               <View style={styles.templateCardInfo}>
                 <View>
-                  <Text style={styles.templateCardTitle}>ER Triage Admission</Text>
+                  <Text style={styles.templateCardTitle}>ER / Walk-in Admission</Text>
                   <Text style={styles.templateCardMeta}>VSMMC General Layout</Text>
                 </View>
                 <View style={styles.toggleActive}><View style={styles.toggleKnob}/></View>
               </View>
               <View style={styles.templateCardFooter}>
                 <CheckCircle2 color="#38A169" size={12} />
-                <Text style={styles.templateCardStatus}>Auto-populated from Triage</Text>
+                <Text style={styles.templateCardStatus}>Auto-populated from Check-In</Text>
               </View>
             </View>
           )}
@@ -215,12 +215,12 @@ export default function AdminTemplatesScreen() {
             </View>
           )}
 
-          {/* Triage Assessment Card */}
+          {/* Transfer / Referral Checklist Card */}
           <View style={styles.templateCard}>
             <View style={styles.templateCardThumbWrapper}>
               <View style={[styles.templateCardThumb, { backgroundColor: '#E6FFFA', alignItems: 'center', justifyContent: 'center' }]}>
                 <View style={{width: 48, height: 48, borderRadius: 8, backgroundColor: '#319795', alignItems: 'center', justifyContent: 'center'}}>
-                  <Text style={{color: 'white', fontWeight: 'bold', fontSize: 24}}>T</Text>
+                  <Text style={{color: 'white', fontWeight: 'bold', fontSize: 24}}>R</Text>
                 </View>
               </View>
               <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>12 ACTIVE PARAMS</Text></View>
@@ -231,14 +231,14 @@ export default function AdminTemplatesScreen() {
             </View>
             <View style={styles.templateCardInfo}>
               <View>
-                <Text style={styles.templateCardTitle}>Triage Assessment</Text>
-                <Text style={styles.templateCardMeta}>Standard DOH Format</Text>
+                <Text style={styles.templateCardTitle}>Transfer / Referral Checklist</Text>
+                <Text style={styles.templateCardMeta}>Registrar Document Checklist</Text>
               </View>
               <View style={styles.toggleActive}><View style={styles.toggleKnob}/></View>
             </View>
             <View style={styles.templateCardFooter}>
               <CheckCircle2 color="#38A169" size={12} />
-              <Text style={styles.templateCardStatus}>Auto-populated from Triage</Text>
+              <Text style={styles.templateCardStatus}>Prompted for Transfer Check-Ins</Text>
             </View>
           </View>
 
@@ -332,7 +332,7 @@ export default function AdminTemplatesScreen() {
         {/* Left Sidebar: Data Dictionary Toggles */}
         <View style={[styles.sidebar, isMobile && { width: '100%' }]}>
           <Text style={styles.sidebarTitle}>Alalay Data Dictionary</Text>
-          <Text style={styles.sidebarDesc}>Toggle fields to require them in the patient's payload.</Text>
+          <Text style={styles.sidebarSub}>Toggle fields to require them in the patient's payload.</Text>
           
             <ScrollView style={styles.dictionaryList} showsVerticalScrollIndicator={false}>
               {DICTIONARY_GROUPS.map((group, gIdx) => (

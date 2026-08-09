@@ -1,181 +1,61 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useStore } from '../store/useStore';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, QrCode, ShieldCheck } from 'lucide-react-native';
+import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AdmissionScreen() {
   const router = useRouter();
-  const masterProfile = useStore(state => state.masterProfile);
-  const updateVisitLog = useStore(state => state.updateVisitLog);
-  
-  const [chiefComplaint, setChiefComplaint] = useState('');
-  const [admissionType, setAdmissionType] = useState('Emergency');
-  const [emName, setEmName] = useState('');
-  const [emRel, setEmRel] = useState('');
-  const [emPhone, setEmPhone] = useState('');
-  const [roomPref, setRoomPref] = useState('Ward');
-  const [consent, setConsent] = useState(false);
-
-  const handleGenerateQR = () => {
-    updateVisitLog({
-      chiefComplaint,
-      admissionType,
-      emergencyContact: { name: emName, relationship: emRel, phone: emPhone },
-      roomPreference: roomPref,
-      dataSharingConsent: consent
-    });
-    router.push(`/qr`);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        
-        {/* HEADER */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ChevronLeft size={24} color="#007AFF" />
-            <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>New Admission</Text>
-          <View style={{ width: 70 }} />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <ChevronLeft size={24} color="#007AFF" />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Hospital Check-In</Text>
+        <View style={{ width: 70 }} />
+      </View>
+
+      <View style={styles.content}>
+        <View style={styles.iconWrap}>
+          <QrCode color="#007AFF" size={48} />
+        </View>
+        <Text style={styles.title}>Scan the admission desk QR</Text>
+        <Text style={styles.description}>
+          The hospital and desk will be identified first. You will review exactly what is shared before a check-in is created.
+        </Text>
+
+        <View style={styles.notice}>
+          <ShieldCheck color="#276749" size={22} />
+          <Text style={styles.noticeText}>
+            The QR contains no patient data. It is only a secure pointer to the hospital admission desk.
+          </Text>
         </View>
 
-        <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 40 }}>
-          
-          <Text style={styles.description}>
-            Add immediate clinical details for this visit. This data will be securely bundled with your Master Profile.
-          </Text>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Patient</Text>
-            <View style={styles.pillContainer}>
-                <TouchableOpacity style={[styles.pill, styles.pillActive]}>
-                  <Text style={[styles.pillText, styles.pillTextActive]}>
-                    {masterProfile.firstName} {masterProfile.lastName} (Me)
-                  </Text>
-                </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Visit Details</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Chief Complaint</Text>
-              <TextInput 
-                style={[styles.input, { height: 80 }]} 
-                placeholder="Why are you at the hospital today?" 
-                placeholderTextColor="#C7C7CC"
-                value={chiefComplaint} 
-                onChangeText={setChiefComplaint}
-                multiline
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Admission Type</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {['Emergency', 'Outpatient', 'Inpatient'].map(type => (
-                  <TouchableOpacity 
-                    key={type} 
-                    style={[styles.typeButton, admissionType === type && styles.typeButtonActive]}
-                    onPress={() => setAdmissionType(type)}
-                  >
-                    <Text style={[styles.typeButtonText, admissionType === type && styles.typeButtonTextActive]}>{type}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Room Preference</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {['Ward', 'Semi-Private', 'Private'].map(room => (
-                  <TouchableOpacity 
-                    key={room} 
-                    style={[styles.typeButton, roomPref === room && styles.typeButtonActive]}
-                    onPress={() => setRoomPref(room)}
-                  >
-                    <Text style={[styles.typeButtonText, roomPref === room && styles.typeButtonTextActive]}>{room}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Emergency Contact</Text>
-            <View style={styles.inputGroup}>
-              <TextInput style={styles.input} placeholder="Name" value={emName} onChangeText={setEmName} />
-            </View>
-            <View style={styles.inputGroup}>
-              <TextInput style={styles.input} placeholder="Relationship (e.g. Spouse)" value={emRel} onChangeText={setEmRel} />
-            </View>
-            <View style={styles.inputGroup}>
-              <TextInput style={styles.input} placeholder="Phone Number" value={emPhone} onChangeText={setEmPhone} keyboardType="phone-pad" />
-            </View>
-          </View>
-
-          <View style={styles.consentBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={styles.consentText}>
-                I consent to sharing my Master Profile and these admission details with the scanning hospital.
-              </Text>
-              <Switch value={consent} onValueChange={setConsent} />
-            </View>
-          </View>
-
-          <TouchableOpacity style={[styles.generateButton, !consent && { opacity: 0.5 }]} onPress={handleGenerateQR} disabled={!consent}>
-            <Text style={styles.generateButtonText}>Generate QR Token</Text>
-          </TouchableOpacity>
-
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/qr')}>
+          <Text style={styles.primaryButtonText}>Scan Hospital QR</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
-  header: { 
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16,
-    backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA'
+    backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA',
   },
   backButton: { flexDirection: 'row', alignItems: 'center' },
   backText: { color: '#007AFF', fontFamily: 'Inter_500Medium', fontSize: 17, marginLeft: -4 },
   headerTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 17, color: '#000000' },
-  
-  content: { padding: 24 },
-  description: { fontFamily: 'Inter_400Regular', fontSize: 15, color: '#8E8E93', marginBottom: 32, lineHeight: 22 },
-  
-  section: { marginBottom: 32 },
-  sectionTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 20, color: '#000000', marginBottom: 16 },
-  
-  pillContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  pill: { backgroundColor: '#FFFFFF', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 20, borderWidth: 1, borderColor: '#E5E5EA' },
-  pillActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  pillText: { fontFamily: 'Inter_500Medium', fontSize: 15, color: '#000000' },
-  pillTextActive: { color: '#FFFFFF' },
-
-  inputGroup: { marginBottom: 16 },
-  label: { fontFamily: 'Inter_500Medium', fontSize: 14, color: '#8E8E93', marginBottom: 8, marginLeft: 16 },
-  input: {
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16,
-    fontFamily: 'Inter_400Regular', fontSize: 17, color: '#000000',
-    borderWidth: 1, borderColor: '#E5E5EA',
-  },
-  
-  typeButton: { flex: 1, backgroundColor: '#FFFFFF', paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E5E5EA', alignItems: 'center' },
-  typeButtonActive: { backgroundColor: '#E5F1FF', borderColor: '#007AFF' },
-  typeButtonText: { fontFamily: 'Inter_500Medium', fontSize: 13, color: '#000000' },
-  typeButtonTextActive: { color: '#007AFF' },
-
-  consentBox: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, marginBottom: 32, borderWidth: 1, borderColor: '#E5E5EA' },
-  consentText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 13, color: '#000000', lineHeight: 18, marginRight: 16 },
-
-  generateButton: { backgroundColor: '#007AFF', padding: 20, borderRadius: 24, alignItems: 'center' },
-  generateButtonText: { color: '#FFFFFF', fontFamily: 'Sora_600SemiBold', fontSize: 17 },
+  content: { flex: 1, padding: 28, justifyContent: 'center', alignItems: 'center' },
+  iconWrap: { width: 88, height: 88, borderRadius: 28, backgroundColor: '#EBF4FF', alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
+  title: { fontFamily: 'Sora_700Bold', fontSize: 28, color: '#1A202C', textAlign: 'center', marginBottom: 12 },
+  description: { maxWidth: 520, fontFamily: 'Inter_400Regular', fontSize: 16, lineHeight: 24, color: '#4A5568', textAlign: 'center' },
+  notice: { maxWidth: 520, flexDirection: 'row', gap: 12, backgroundColor: '#F0FFF4', borderWidth: 1, borderColor: '#C6F6D5', borderRadius: 16, padding: 16, marginVertical: 28 },
+  noticeText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 21, color: '#276749' },
+  primaryButton: { width: '100%', maxWidth: 520, backgroundColor: '#007AFF', borderRadius: 14, paddingVertical: 17, alignItems: 'center' },
+  primaryButtonText: { color: '#FFFFFF', fontFamily: 'Sora_600SemiBold', fontSize: 16 },
 });

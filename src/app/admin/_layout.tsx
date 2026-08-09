@@ -1,5 +1,5 @@
 import { Slot, usePathname, useRouter } from 'expo-router';
-import { Activity, BookOpen, Building2, FileJson, LogOut } from 'lucide-react-native';
+import { BookOpen, Building2, ClipboardList, FileJson, LogOut } from 'lucide-react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AdminLayout() {
@@ -10,7 +10,7 @@ export default function AdminLayout() {
     { name: 'Identity', path: '/admin', icon: Building2 },
     { name: 'Templates', path: '/admin/templates', icon: FileJson },
     { name: 'AI Dictionary', path: '/admin/dictionary', icon: BookOpen },
-    { name: 'Triage Hub', path: '/admin/triage', icon: Activity },
+    { name: 'Admission Queue', path: '/admin/triage', icon: ClipboardList },
   ];
 
   return (

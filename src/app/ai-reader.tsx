@@ -76,31 +76,31 @@ export default function AIReaderScreen() {
             <View style={styles.insightCard}>
               <View style={styles.insightHeader}>
                 <Activity size={18} color="#FF3B30" />
-                <Text style={styles.insightTitle}>Slight Anemia Detected</Text>
+                <Text style={styles.insightTitle}>Below Provided Range</Text>
               </View>
               <Text style={styles.insightText}>
-                Your <Text style={styles.boldText}>Erythrocytes (Red Blood Cells)</Text> and <Text style={styles.boldText}>Hemoglobin</Text> are slightly below normal. This usually means you might feel a bit more tired than usual.
+                <Text style={styles.boldText}>Erythrocytes</Text> (3.9) are below 4.2-5.4, and <Text style={styles.boldText}>Hemoglobin</Text> (11.2) is below 12.0-15.5. These labels use only the hospital ranges shown in this demo.
               </Text>
             </View>
 
             <View style={[styles.insightCard, { backgroundColor: '#E6F4EA' }]}>
               <View style={styles.insightHeader}>
                 <Info size={18} color="#34C759" />
-                <Text style={[styles.insightTitle, { color: '#34C759' }]}>Good News</Text>
+                <Text style={[styles.insightTitle, { color: '#34C759' }]}>Within Provided Range</Text>
               </View>
               <Text style={styles.insightText}>
-                Your <Text style={styles.boldText}>Leukocytes (White Blood Cells)</Text> and <Text style={styles.boldText}>Thrombocytes (Platelets)</Text> are perfectly normal. This indicates your body is not fighting an active infection right now.
+                <Text style={styles.boldText}>Leukocytes</Text> (6.5) and <Text style={styles.boldText}>Thrombocytes</Text> (250) fall within the hospital ranges displayed above. No cause or diagnosis is inferred.
               </Text>
             </View>
 
-            <Text style={styles.disclaimer}>
-              ALALAY AI is a guide, not a doctor. Always consult your attending physician for a formal diagnosis.
-            </Text>
           </View>
 
         </View>
 
       </ScrollView>
+      <View style={styles.disclaimerBanner}>
+        <Text style={styles.disclaimer}>This is not medical advice - please discuss with your doctor.</Text>
+      </View>
     </SafeAreaView>
   );
 }
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
 
   // Table Styles
   tableRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-  tableDivider: { height: 1, backgroundColor: '#E5E5EA', my: 4 },
+  tableDivider: { height: 1, backgroundColor: '#E5E5EA', marginVertical: 4 },
   tableCol1: { flex: 2, fontFamily: 'Inter_500Medium', fontSize: 13, color: '#4A5568' },
   tableCol2: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#000000', textAlign: 'right' },
   tableCol3: { flex: 1.5, fontFamily: 'Inter_400Regular', fontSize: 12, color: '#8E8E93', textAlign: 'right' },
@@ -149,5 +149,6 @@ const styles = StyleSheet.create({
   insightText: { fontFamily: 'Inter_400Regular', fontSize: 14, color: '#2D3748', lineHeight: 22 },
   boldText: { fontFamily: 'Inter_600SemiBold' },
 
-  disclaimer: { fontFamily: 'Inter_400Regular', fontSize: 12, color: '#8E8E93', textAlign: 'center', marginTop: 16, fontStyle: 'italic' }
+  disclaimerBanner: { backgroundColor: '#FFF5F5', borderTopWidth: 1, borderTopColor: '#FED7D7', paddingHorizontal: 18, paddingVertical: 13 },
+  disclaimer: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#9B2C2C', textAlign: 'center' }
 });

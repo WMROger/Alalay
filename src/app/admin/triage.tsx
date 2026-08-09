@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing } from 'react-native';
-import { Activity, UserPlus, CheckCircle2, ShieldAlert, FileText, Smartphone, QrCode } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing, TextInput } from 'react-native';
+import { ClipboardList, KeyRound, UserPlus, Smartphone, QrCode } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../store/useStore';
 
-export default function AdminTriageScreen() {
+export default function AdmissionQueueScreen() {
   const router = useRouter();
-  const [scanState, setScanState] = useState<'listening' | 'receiving' | 'complete'>('listening');
+  const [scanState, setScanState] = useState<'listening' | 'receiving' | 'pending' | 'matched'>('listening');
+  const [enteredCode, setEnteredCode] = useState('');
   const masterProfile = useStore(state => state.masterProfile);
+  const visitLog = useStore(state => state.visitLog);
   
   // Radar Animation
   const [pulseAnim] = useState(new Animated.Value(0));
@@ -30,12 +32,21 @@ export default function AdminTriageScreen() {
   const simulateIncomingScan = () => {
     setScanState('receiving');
     setTimeout(() => {
-      setScanState('complete');
+      setScanState('pending');
     }, 1500);
   };
 
   const handleReject = () => {
     setScanState('listening');
+    setEnteredCode('');
+  };
+
+  const expectedMatchCode = visitLog.matchCode || '428';
+
+  const confirmMatchCode = () => {
+    if (enteredCode === expectedMatchCode) {
+      setScanState('matched');
+    }
   };
 
   const handleAdmit = () => {
@@ -65,17 +76,17 @@ export default function AdminTriageScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerIcon}>
-          <Activity color="#007AFF" size={32} />
+          <ClipboardList color="#007AFF" size={32} />
         </View>
         <View style={styles.headerTextWrap}>
-          <Text style={styles.title}>Triage Hub</Text>
-          <Text style={styles.subtitle}>Live monitoring of patient intakes via Alalay QR.</Text>
+          <Text style={styles.title}>Admission Queue</Text>
+          <Text style={styles.subtitle}>Live administrative check-ins from admission desk QR codes.</Text>
         </View>
         
         {/* Hidden Simulation Button for Pitch */}
         <TouchableOpacity style={styles.simBtn} onPress={simulateIncomingScan}>
           <Smartphone color="#718096" size={16} />
-          <Text style={styles.simBtnText}>[Demo: Trigger Patient Scan]</Text>
+          <Text style={styles.simBtnText}>Demo: Add Check-In</Text>
         </TouchableOpacity>
       </View>
 
@@ -90,21 +101,56 @@ export default function AdminTriageScreen() {
                 transform: [{ scale: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 3] }) }]
               }
             ]} />
-            <Activity color="#007AFF" size={48} style={{ zIndex: 10 }} />
-            <Text style={styles.listeningTitle}>Waiting for Patient Scan</Text>
-            <Text style={styles.listeningDesc}>The system is securely listening for incoming payloads from the triage QR code.</Text>
+            <ClipboardList color="#007AFF" size={48} style={{ zIndex: 10 }} />
+            <Text style={styles.listeningTitle}>Waiting for Check-Ins</Text>
+            <Text style={styles.listeningDesc}>New patient check-ins will appear here in arrival order. This queue does not assess urgency.</Text>
           </View>
         )}
 
         {scanState === 'receiving' && (
           <View style={[styles.listeningArea, { backgroundColor: '#F0FFF4', borderColor: '#C6F6D5' }]}>
             <UserPlus color="#38A169" size={48} />
-            <Text style={[styles.listeningTitle, { color: '#276749' }]}>Incoming Intake: {masterProfile.firstName} {masterProfile.lastName}</Text>
-            <Text style={styles.listeningDesc}>Decrypting and mapping payload to hospital schema...</Text>
+            <Text style={[styles.listeningTitle, { color: '#276749' }]}>Incoming Check-In: {masterProfile.firstName} {masterProfile.lastName}</Text>
+            <Text style={styles.listeningDesc}>Receiving the patient-authorized profile for registrar review...</Text>
           </View>
         )}
 
-        {scanState === 'complete' && (
+        {scanState === 'pending' && (
+          <View style={styles.matchCard}>
+            <View style={styles.matchIcon}><KeyRound color="#2B6CB0" size={30} /></View>
+            <Text style={styles.matchTitle}>Confirm patient match code</Text>
+            <Text style={styles.matchDescription}>Ask the patient for the 3-digit code shown on their phone before opening the record.</Text>
+            <View style={styles.checkInSummary}>
+              <Text style={styles.summaryName}>{masterProfile.firstName || 'Juan'} {masterProfile.lastName || 'Dela Cruz'}</Text>
+              <Text style={styles.summaryMeta}>Arrival: {visitLog.modeOfAdmission || 'ER'} · Status: Pending</Text>
+              {!!visitLog.visitNote && <Text style={styles.summaryNote}>Patient note: {visitLog.visitNote}</Text>}
+              {visitLog.modeOfAdmission === 'Transfer' && <Text style={styles.referralReminder}>Request referral letter or transfer summary.</Text>}
+            </View>
+            <TextInput
+              style={styles.codeInput}
+              value={enteredCode}
+              onChangeText={setEnteredCode}
+              placeholder="3-digit code"
+              keyboardType="number-pad"
+              maxLength={3}
+            />
+            <Text style={styles.demoHint}>Demo code: {expectedMatchCode}</Text>
+            <View style={styles.matchActions}>
+              <TouchableOpacity style={styles.closeQueueButton} onPress={handleReject}>
+                <Text style={styles.closeQueueButtonText}>Close</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmMatchButton, enteredCode !== expectedMatchCode && { opacity: 0.45 }]}
+                onPress={confirmMatchCode}
+                disabled={enteredCode !== expectedMatchCode}
+              >
+                <Text style={styles.confirmMatchButtonText}>Confirm & Open Record</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {scanState === 'matched' && (
           <View style={styles.pdfViewerContainer}>
             <View style={styles.pdfViewerHeader}>
               <TouchableOpacity onPress={handleReject} style={{ padding: 8 }}>
@@ -250,6 +296,23 @@ const styles = StyleSheet.create({
   radarCircle: { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: '#EBF4FF' },
   listeningTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 24, color: '#2D3748', marginTop: 32, zIndex: 10 },
   listeningDesc: { fontFamily: 'Inter_400Regular', fontSize: 16, color: '#718096', marginTop: 12, zIndex: 10 },
+
+  matchCard: { width: '100%', maxWidth: 620, alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 18, borderWidth: 1, borderColor: '#E2E8F0', padding: 32, alignItems: 'center' },
+  matchIcon: { width: 62, height: 62, borderRadius: 20, backgroundColor: '#EBF4FF', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  matchTitle: { fontFamily: 'Sora_700Bold', fontSize: 24, color: '#1A202C', textAlign: 'center' },
+  matchDescription: { maxWidth: 460, fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 22, color: '#718096', textAlign: 'center', marginTop: 8 },
+  checkInSummary: { width: '100%', backgroundColor: '#F7FAFC', borderRadius: 12, padding: 16, marginVertical: 20 },
+  summaryName: { fontFamily: 'Sora_600SemiBold', fontSize: 17, color: '#2D3748' },
+  summaryMeta: { fontFamily: 'Inter_500Medium', fontSize: 13, color: '#718096', marginTop: 5 },
+  summaryNote: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 19, color: '#4A5568', marginTop: 10 },
+  referralReminder: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#975A16', backgroundColor: '#FFFAF0', padding: 10, borderRadius: 8, marginTop: 10 },
+  codeInput: { width: 180, borderWidth: 2, borderColor: '#CBD5E0', borderRadius: 12, padding: 14, textAlign: 'center', fontFamily: 'Sora_700Bold', fontSize: 26, letterSpacing: 8, color: '#1A202C' },
+  demoHint: { fontFamily: 'Inter_400Regular', fontSize: 12, color: '#A0AEC0', marginTop: 8 },
+  matchActions: { width: '100%', flexDirection: 'row', gap: 12, marginTop: 22 },
+  closeQueueButton: { flex: 1, borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+  closeQueueButtonText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#4A5568' },
+  confirmMatchButton: { flex: 2, backgroundColor: '#007AFF', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+  confirmMatchButtonText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#FFFFFF' },
 
   completeArea: { flex: 1 },
   successBanner: { backgroundColor: '#38A169', padding: 16, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },

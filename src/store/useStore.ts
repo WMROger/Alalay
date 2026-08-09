@@ -15,19 +15,28 @@ export interface MasterProfileState {
   lastName: string;
   dateOfBirth: string;
   sex: string;
+  civilStatus: string;
   address: { street: string; city: string; region: string };
   contactNumber: string;
   philhealthId: string;
+  memberCategory: string;
   bloodType: string;
   knownAllergies: string[];
+  currentMedications: string[];
   chronicConditions: string[];
+  emergencyContact: { name: string; relationship: string; phone: string };
+  hmoName: string;
+  hmoPolicyNumber: string;
+  secondaryIdPhotoUrl: string;
 }
 
 export interface VisitLogState {
-  chiefComplaint: string;
-  admissionType: string;
-  emergencyContact: { name: string; relationship: string; phone: string };
-  roomPreference: string;
+  hospitalName: string;
+  deskName: string;
+  modeOfAdmission: 'ER' | 'OPD' | 'Transfer';
+  visitNote: string;
+  matchCode: string;
+  status: 'pending' | 'matched' | 'completed';
   dataSharingConsent: boolean;
 }
 
@@ -49,15 +58,17 @@ interface AdmissionStore {
 }
 
 const initialMasterProfile: MasterProfileState = {
-  firstName: '', lastName: '', dateOfBirth: '', sex: '', 
+  firstName: '', lastName: '', dateOfBirth: '', sex: '', civilStatus: '',
   address: { street: '', city: '', region: '' }, contactNumber: '',
-  philhealthId: '', bloodType: '', knownAllergies: [], chronicConditions: []
+  philhealthId: '', memberCategory: '', bloodType: '', knownAllergies: [],
+  currentMedications: [], chronicConditions: [],
+  emergencyContact: { name: '', relationship: '', phone: '' },
+  hmoName: '', hmoPolicyNumber: '', secondaryIdPhotoUrl: ''
 };
 
 const initialVisitLog: VisitLogState = {
-  chiefComplaint: '', admissionType: 'Emergency', 
-  emergencyContact: { name: '', relationship: '', phone: '' }, 
-  roomPreference: 'Ward', dataSharingConsent: false
+  hospitalName: '', deskName: '', modeOfAdmission: 'ER', visitNote: '',
+  matchCode: '', status: 'pending', dataSharingConsent: false
 };
 
 // 2. Create Store

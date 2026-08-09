@@ -18,7 +18,7 @@ export default function AdminIdentityScreen() {
   const [form, setForm] = useState({
     adminEmail: 'it.admin@vsmmc.gov.ph',
     adminPhone: '032-253-9891',
-    departmentName: 'Emergency Triage'
+    departmentName: 'Main Admission Desk'
   });
 
   const handleSave = () => {
@@ -127,7 +127,7 @@ export default function AdminIdentityScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Station QR Code Deployment</Text>
-            <Text style={styles.helpText}>Print this physical QR code and place it at the triage desk. Patients will scan this to initiate their intake.</Text>
+            <Text style={styles.helpText}>Print this physical QR code and place it at the admission desk. Patients scan it to start a secure check-in.</Text>
           </View>
           
           <View style={styles.goldenQrArea}>

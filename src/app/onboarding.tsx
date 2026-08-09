@@ -22,23 +22,24 @@ export default function OnboardingScreen() {
   const [fullName, setFullName] = useState(''); 
   const [dob, setDob] = useState('');
   const [sex, setSex] = useState('');
+  const [civilStatus, setCivilStatus] = useState('');
   const [address, setAddress] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [memberCategory, setMemberCategory] = useState('');
   
   const [bloodType, setBloodType] = useState('');
   const [allergies, setAllergies] = useState('');
-  const [complaint, setComplaint] = useState('');
+  const [medications, setMedications] = useState('');
+  const [chronicConditions, setChronicConditions] = useState('');
   const [emergencyName, setEmergencyName] = useState('');
+  const [emergencyRelationship, setEmergencyRelationship] = useState('');
   const [emergencyPhone, setEmergencyPhone] = useState('');
-
-  // Bereavement (Optional)
-  const [isBereavement, setIsBereavement] = useState<boolean | null>(null);
-  const [decLastName, setDecLastName] = useState('');
-  const [decFirstName, setDecFirstName] = useState('');
-  const [dateOfDeath, setDateOfDeath] = useState('');
-  const [deathCertReceived, setDeathCertReceived] = useState<boolean | null>(null);
+  const [hmoName, setHmoName] = useState('');
+  const [hmoPolicyNumber, setHmoPolicyNumber] = useState('');
+  const [secondaryIdUri, setSecondaryIdUri] = useState('');
 
   // Beneficiaries (Local State)
-  const [onboardingBeneficiaries, setOnboardingBeneficiaries] = useState<{firstName: string, lastName: string, relationship: string}[]>([]);
+  const [onboardingBeneficiaries, setOnboardingBeneficiaries] = useState<{firstName: string, lastName: string, relationship: string, pin?: string, specialId?: string}[]>([]);
   const [isAddingBen, setIsAddingBen] = useState(false);
   const [benFirstName, setBenFirstName] = useState('');
   const [benLastName, setBenLastName] = useState('');
@@ -71,6 +72,17 @@ export default function OnboardingScreen() {
     nextStep();
   };
 
+  const handleSecondaryIdUpload = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setSecondaryIdUri(result.assets[0].uri);
+    }
+  };
+
   const handleFinish = () => {
     const names = fullName.split(' ');
     const firstName = names[0] || '';
@@ -81,12 +93,19 @@ export default function OnboardingScreen() {
       lastName,
       dateOfBirth: dob,
       sex,
+      civilStatus,
       address: { street: address, city: '', region: '' },
-      contactNumber: emergencyPhone, // Mock logic mapping phone to contact
+      contactNumber,
       philhealthId: pin,
+      memberCategory,
       bloodType,
       knownAllergies: allergies.split(',').map(a => a.trim()).filter(Boolean),
-      chronicConditions: []
+      currentMedications: medications.split(',').map(item => item.trim()).filter(Boolean),
+      chronicConditions: chronicConditions.split(',').map(item => item.trim()).filter(Boolean),
+      emergencyContact: { name: emergencyName, relationship: emergencyRelationship, phone: emergencyPhone },
+      hmoName,
+      hmoPolicyNumber,
+      secondaryIdPhotoUrl: secondaryIdUri,
     });
 
     onboardingBeneficiaries.forEach(b => {
@@ -107,6 +126,11 @@ export default function OnboardingScreen() {
   };
 
   const progressPercentage = Math.round((step / totalSteps) * 100);
+  const canContinue = step === 2
+    ? Boolean(pin && fullName && dob && sex && address && contactNumber)
+    : step === 3
+      ? Boolean(emergencyName && emergencyRelationship && emergencyPhone)
+      : true;
 
   const RequiredLabel = ({ text }: { text: string }) => (
     <Text style={styles.label}>
@@ -198,31 +222,51 @@ export default function OnboardingScreen() {
                 <TextInput style={styles.input} value={sex} onChangeText={setSex} placeholder="Female" />
               </View>
               <View style={styles.inputGroup}>
+                <Text style={styles.label}>Civil status</Text>
+                <TextInput style={styles.input} value={civilStatus} onChangeText={setCivilStatus} placeholder="Single, Married, Widowed" />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>PhilHealth member category</Text>
+                <TextInput style={styles.input} value={memberCategory} onChangeText={setMemberCategory} placeholder="Formal Economy" />
+              </View>
+              <View style={styles.inputGroup}>
                 <RequiredLabel text="Address" />
                 <TextInput style={[styles.input, { height: 80 }]} value={address} onChangeText={setAddress} multiline placeholder="Unit 12B, Alabang Hills..." />
+              </View>
+              <View style={styles.inputGroup}>
+                <RequiredLabel text="Your contact number" />
+                <TextInput style={styles.input} value={contactNumber} onChangeText={setContactNumber} placeholder="+63 917 555 0100" keyboardType="phone-pad" />
               </View>
             </View>
           )}
 
           {step === 3 && (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Medical Baseline</Text>
+              <Text style={styles.cardTitle}>Health Profile Setup</Text>
               
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Blood type</Text>
                 <TextInput style={styles.input} value={bloodType} onChangeText={setBloodType} placeholder="O+" />
               </View>
               <View style={styles.inputGroup}>
-                <RequiredLabel text="Allergies" />
+                <Text style={styles.label}>Known allergies</Text>
                 <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} placeholder="Penicillin, Shrimp" />
               </View>
               <View style={styles.inputGroup}>
-                <RequiredLabel text="Current complaint" />
-                <TextInput style={styles.input} value={complaint} onChangeText={setComplaint} placeholder="Severe abdominal pain" />
+                <Text style={styles.label}>Current medications</Text>
+                <TextInput style={styles.input} value={medications} onChangeText={setMedications} placeholder="Metformin, Amlodipine" />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Chronic conditions</Text>
+                <TextInput style={styles.input} value={chronicConditions} onChangeText={setChronicConditions} placeholder="Diabetes, Hypertension" />
               </View>
               <View style={styles.inputGroup}>
                 <RequiredLabel text="Emergency contact name" />
                 <TextInput style={styles.input} value={emergencyName} onChangeText={setEmergencyName} placeholder="Jose Dela Cruz" />
+              </View>
+              <View style={styles.inputGroup}>
+                <RequiredLabel text="Emergency contact relationship" />
+                <TextInput style={styles.input} value={emergencyRelationship} onChangeText={setEmergencyRelationship} placeholder="Spouse" />
               </View>
               <View style={styles.inputGroup}>
                 <RequiredLabel text="Emergency contact phone" />
@@ -286,40 +330,31 @@ export default function OnboardingScreen() {
 
           {step === 5 && (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Bereavement Claim</Text>
-              <Text style={styles.cardSub}>Are you filling this out to process a bereavement claim for a deceased family member?</Text>
-              
-              <TouchableOpacity style={[styles.selectButton, isBereavement === true && styles.selectButtonActive]} onPress={() => setIsBereavement(true)}>
-                <Text style={[styles.selectButtonText, isBereavement === true && styles.selectButtonTextActive]}>Yes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.selectButton, isBereavement === false && styles.selectButtonActive]} onPress={() => setIsBereavement(false)}>
-                <Text style={[styles.selectButtonText, isBereavement === false && styles.selectButtonTextActive]}>No, skip this step</Text>
-              </TouchableOpacity>
+              <Text style={styles.cardTitle}>Insurance & Secondary ID</Text>
+              <Text style={styles.cardSub}>These fields are optional and can be completed later.</Text>
 
-              {isBereavement && (
-                <View style={{ marginTop: 24 }}>
-                  <View style={styles.inputGroup}>
-                    <RequiredLabel text="Decedent Last Name" />
-                    <TextInput style={styles.input} value={decLastName} onChangeText={setDecLastName} />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <RequiredLabel text="Decedent First Name" />
-                    <TextInput style={styles.input} value={decFirstName} onChangeText={setDecFirstName} />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <RequiredLabel text="Date of Death" />
-                    <TextInput style={styles.input} value={dateOfDeath} onChangeText={setDateOfDeath} placeholder="MM/DD/YYYY" keyboardType="numeric" />
-                  </View>
-                  
-                  <Text style={styles.label}>Death Certificate Received? <Text style={{ color: '#FF3B30' }}>*</Text></Text>
-                  <TouchableOpacity style={[styles.selectButton, deathCertReceived === true && styles.selectButtonActive]} onPress={() => setDeathCertReceived(true)}>
-                    <Text style={[styles.selectButtonText, deathCertReceived === true && styles.selectButtonTextActive]}>Yes</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.selectButton, deathCertReceived === false && styles.selectButtonActive]} onPress={() => setDeathCertReceived(false)}>
-                    <Text style={[styles.selectButtonText, deathCertReceived === false && styles.selectButtonTextActive]}>No</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>HMO or private insurer</Text>
+                <TextInput style={styles.input} value={hmoName} onChangeText={setHmoName} placeholder="Maxicare" />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Policy number</Text>
+                <TextInput style={styles.input} value={hmoPolicyNumber} onChangeText={setHmoPolicyNumber} placeholder="Optional" />
+              </View>
+              <TouchableOpacity style={styles.uploadArea} onPress={handleSecondaryIdUpload}>
+                {secondaryIdUri ? (
+                  <>
+                    <Image source={{ uri: secondaryIdUri }} style={styles.previewImage} />
+                    <Text style={styles.uploadTextSuccess}>Secondary ID attached</Text>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud size={40} color={PRIMARY_BLUE} style={{ marginBottom: 12 }} />
+                    <Text style={styles.uploadText}>Upload a secondary government ID</Text>
+                    <Text style={styles.uploadSubText}>Optional photo upload</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           )}
 
@@ -332,20 +367,25 @@ export default function OnboardingScreen() {
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>Full Name</Text><Text style={styles.previewValue}>{fullName || 'N/A'}</Text></View>
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>Date of Birth</Text><Text style={styles.previewValue}>{dob || 'N/A'}</Text></View>
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>Sex</Text><Text style={styles.previewValue}>{sex || 'N/A'}</Text></View>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>Civil Status</Text><Text style={styles.previewValue}>{civilStatus || 'Not provided'}</Text></View>
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>PhilHealth PIN</Text><Text style={styles.previewValue}>{pin || 'N/A'}</Text></View>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>Member Category</Text><Text style={styles.previewValue}>{memberCategory || 'Not provided'}</Text></View>
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>Address</Text><Text style={styles.previewValue}>{address || 'N/A'}</Text></View>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>Contact Number</Text><Text style={styles.previewValue}>{contactNumber || 'N/A'}</Text></View>
               </View>
 
               <View style={styles.previewSummaryCard}>
-                <Text style={styles.previewSummaryTitle}>2. MEDICAL BASELINE</Text>
+                <Text style={styles.previewSummaryTitle}>2. HEALTH PROFILE</Text>
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>Blood Type</Text><Text style={styles.previewValue}>{bloodType || 'N/A'}</Text></View>
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>Allergies</Text><Text style={styles.previewValue}>{allergies || 'None declared'}</Text></View>
-                <View style={styles.previewRow}><Text style={styles.previewLabel}>Current Complaint</Text><Text style={styles.previewValue}>{complaint || 'N/A'}</Text></View>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>Current Medications</Text><Text style={styles.previewValue}>{medications || 'None declared'}</Text></View>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>Chronic Conditions</Text><Text style={styles.previewValue}>{chronicConditions || 'None declared'}</Text></View>
               </View>
 
               <View style={styles.previewSummaryCard}>
                 <Text style={styles.previewSummaryTitle}>3. EMERGENCY CONTACT</Text>
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>Name</Text><Text style={styles.previewValue}>{emergencyName || 'N/A'}</Text></View>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>Relationship</Text><Text style={styles.previewValue}>{emergencyRelationship || 'N/A'}</Text></View>
                 <View style={styles.previewRow}><Text style={styles.previewLabel}>Phone Number</Text><Text style={styles.previewValue}>{emergencyPhone || 'N/A'}</Text></View>
               </View>
 
@@ -363,17 +403,16 @@ export default function OnboardingScreen() {
                 )}
               </View>
 
-              {isBereavement && (
-                <View style={styles.previewSummaryCard}>
-                  <Text style={styles.previewSummaryTitle}>5. BEREAVEMENT LCR</Text>
-                  <View style={styles.previewRow}><Text style={styles.previewLabel}>Decedent Name</Text><Text style={styles.previewValue}>{decFirstName} {decLastName}</Text></View>
-                  <View style={styles.previewRow}><Text style={styles.previewLabel}>Date of Death</Text><Text style={styles.previewValue}>{dateOfDeath || 'N/A'}</Text></View>
-                </View>
-              )}
+              <View style={styles.previewSummaryCard}>
+                <Text style={styles.previewSummaryTitle}>5. INSURANCE & ID</Text>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>HMO</Text><Text style={styles.previewValue}>{hmoName || 'Not provided'}</Text></View>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>Policy Number</Text><Text style={styles.previewValue}>{hmoPolicyNumber || 'Not provided'}</Text></View>
+                <View style={styles.previewRow}><Text style={styles.previewLabel}>Secondary ID</Text><Text style={styles.previewValue}>{secondaryIdUri ? 'Attached' : 'Not attached'}</Text></View>
+              </View>
 
               <View style={styles.previewWhyCard}>
                 <Text style={styles.previewWhyTitle}>Why this matters</Text>
-                <Text style={styles.previewWhyText}>The hospital sees the exact data the patient entered, not a demo stub.</Text>
+                <Text style={styles.previewWhyText}>You will review and explicitly approve this information before it is shared with a hospital admission desk.</Text>
               </View>
             </View>
           )}
@@ -383,7 +422,11 @@ export default function OnboardingScreen() {
         {/* STICKY BOTTOM BAR */}
         {step > 1 && (
           <View style={styles.bottomBar}>
-            <TouchableOpacity style={styles.primaryButton} onPress={step < totalSteps ? nextStep : handleFinish}>
+            <TouchableOpacity
+              style={[styles.primaryButton, !canContinue && { opacity: 0.45 }]}
+              onPress={step < totalSteps ? nextStep : handleFinish}
+              disabled={!canContinue}
+            >
               <Text style={styles.primaryButtonText}>
                 {step < totalSteps ? `Looks good! Go to Step ${step + 1}` : 'Complete Setup'}
               </Text>

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Hackathon",
-    "slug": "Hackathon",
+    "name": "Alalay",
+    "slug": "alalay",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "hackathon",
+    "scheme": "alalay",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"

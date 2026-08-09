@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Building2, ChevronRight, Edit2, FileText, Fingerprint, FolderHeart, Home, Pill, Plus, QrCode, Settings, X, Camera } from 'lucide-react-native';
-import { Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Building2, ChevronRight, FileText, Fingerprint, FolderHeart, Home, Pill, Plus, QrCode, Settings, X, Camera } from 'lucide-react-native';
+import { Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useStore } from '../store/useStore';
 
 const { width } = Dimensions.get('window');
@@ -27,19 +27,6 @@ export default function DashboardScreen() {
           />
         </View>
 
-
-        {/* Reason for Visit */}
-        <View style={styles.reasonSection}>
-          <Text style={styles.sectionLabel}>REASON FOR VISIT TODAY?</Text>
-          <View style={styles.inputContainer}>
-            <TextInput 
-              style={styles.input}
-              placeholder="e.g. Annual Checkup, Consultation..."
-              placeholderTextColor="#A0AEC0"
-            />
-            <Edit2 color="#CBD5E0" size={18} />
-          </View>
-        </View>
 
         {/* PhilSys Integration */}
         <View style={styles.philsysContainer}>
