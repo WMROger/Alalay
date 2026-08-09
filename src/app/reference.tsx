@@ -78,10 +78,11 @@ export default function ReferenceSheetScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        <ViewShot ref={viewShotRef} options={{ format: 'jpg', quality: 1, result: 'base64' }}>
-          
-          <View style={[styles.sheet, { minHeight: 600 }]}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+          <ViewShot ref={viewShotRef} options={{ format: 'jpg', quality: 1, result: 'base64' }}>
+            
+            <View style={[styles.sheet, { minHeight: 600 }]}>
             
             {activeTab === 'MDR' && (
               <View style={[mdrStyles.document, { padding: 16 }]}>
@@ -220,8 +221,9 @@ export default function ReferenceSheetScreen() {
               </View>
             )}
 
-          </View>
-        </ViewShot>
+            </View>
+          </ViewShot>
+        </ScrollView>
       </ScrollView>
     </SafeAreaView>
   );
@@ -239,8 +241,23 @@ const styles = StyleSheet.create({
   activeTab: { borderBottomColor: '#319795' },
   tabText: { color: '#A0AEC0', fontFamily: 'Sora_600SemiBold', fontSize: 14 },
   activeTabText: { color: '#FFFFFF' },
-  content: { padding: 16 },
-  sheet: { backgroundColor: '#FFFFFF', padding: 24, borderRadius: 0, minHeight: 600, marginBottom: 32 },
+  content: { padding: 16, alignItems: 'center' },
+  sheet: { 
+    backgroundColor: '#FFFFFF', 
+    padding: 32, 
+    borderRadius: 4, 
+    minHeight: 800, 
+    minWidth: 750, // Ensures it doesn't get squished on mobile
+    width: '100%', 
+    maxWidth: 850, 
+    marginBottom: 32,
+    // Web shadow fallback
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8
+  },
   alalayBrand: { fontFamily: 'Sora_700Bold', fontSize: 24, color: '#319795', textAlign: 'center', marginBottom: 8, display: 'none' },
   sheetTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 16, color: '#2D3748', textAlign: 'center', marginBottom: 32, textTransform: 'uppercase' },
   section: { marginBottom: 24 },

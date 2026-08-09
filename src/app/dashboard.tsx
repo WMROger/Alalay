@@ -1,275 +1,259 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Modal, TextInput, Dimensions } from 'react-native';
+import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { Building2, ChevronRight, Edit2, FileText, Fingerprint, FolderHeart, Home, Pill, Plus, QrCode, Settings, X, Camera } from 'lucide-react-native';
+import { Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useStore } from '../store/useStore';
-import { QrCode, HeartPulse, BrainCircuit, FileText, Users, FileHeart, UserCircle2, LogOut } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const router = useRouter();
   const masterProfile = useStore(state => state.masterProfile);
-  const beneficiaries = useStore(state => state.beneficiaries);
-  const addBeneficiary = useStore(state => state.addBeneficiary);
-  const logout = useStore(state => state.logout);
-  const hasOnboarded = useStore(state => state.hasOnboarded);
-
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newFirstName, setNewFirstName] = useState('');
-  const [newLastName, setNewLastName] = useState('');
-  const [newRel, setNewRel] = useState('');
-  const [newPin, setNewPin] = useState('');
-  const [newSpecialId, setNewSpecialId] = useState('');
-
-  if (!hasOnboarded) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>No profile found. Please complete onboarding.</Text>
-      </SafeAreaView>
-    );
-  }
-
-  const initials = masterProfile.firstName && masterProfile.lastName
-    ? `${masterProfile.firstName.charAt(0)}${masterProfile.lastName.charAt(0)}`.toUpperCase()
-    : 'ME';
-
-  const handleAddBeneficiary = () => {
-    if (!newFirstName || !newLastName || !newRel || !newPin) return;
-    addBeneficiary({
-      id: Math.random().toString(),
-      firstName: newFirstName,
-      lastName: newLastName,
-      relationship: newRel,
-      pin: newPin,
-      specialId: newSpecialId
-    });
-    setModalVisible(false);
-    setNewFirstName('');
-    setNewLastName('');
-    setNewRel('');
-    setNewPin('');
-    setNewSpecialId('');
-  };
+  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* BLUE HEADER */}
-      <View style={styles.headerBackground}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>Good morning,</Text>
-            <Text style={styles.name}>{masterProfile.firstName || 'User'}!</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-            <TouchableOpacity onPress={() => { logout(); router.replace('/login'); }}>
-              <LogOut size={24} color="#FFFFFF" opacity={0.8} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* FLOATING ACTION ROW */}
-        <View style={styles.floatingActions}>
-          <TouchableOpacity style={styles.primaryAction} onPress={() => router.push('/admission')}>
-            <View style={styles.iconCircle}>
-              <HeartPulse size={28} color="#007AFF" />
-            </View>
-            <Text style={styles.primaryActionTitle}>New Admission</Text>
-            <Text style={styles.primaryActionSub}>Fast-track ER forms</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.secondaryAction} onPress={() => router.push('/ai-reader')}>
-            <View style={[styles.iconCircle, { backgroundColor: '#F0F0FF' }]}>
-              <BrainCircuit size={28} color="#5E5CE6" />
-            </View>
-            <Text style={styles.primaryActionTitle}>AI Reader</Text>
-            <Text style={styles.primaryActionSub}>Explain my bills</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingTop: 100, paddingBottom: 40 }}>
+      <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingTop: 20, paddingBottom: 140 }}>
         
-        {/* CORE ACTIONS GRID */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>My Documents</Text>
-          <View style={styles.grid}>
-            
-            <TouchableOpacity style={styles.gridItem} onPress={() => router.push(`/reference`)}>
-              <View style={[styles.gridIcon, { backgroundColor: '#E5F1FF' }]}>
-                <FileText size={24} color="#007AFF" />
-              </View>
-              <Text style={styles.gridText}>Master{'\n'}Profile</Text>
-            </TouchableOpacity>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Hello, {masterProfile.firstName || 'Juan'}</Text>
+            <Text style={styles.subGreeting}>Your Health Vault is Secure</Text>
+          </View>
+          <Image 
+            source={{ uri: 'https://i.pravatar.cc/150?img=11' }} 
+            style={styles.avatar} 
+          />
+        </View>
 
-            <TouchableOpacity style={styles.gridItem} onPress={() => router.push(`/reference`)}>
-              <View style={[styles.gridIcon, { backgroundColor: '#E6F4EA' }]}>
-                <FileHeart size={24} color="#34C759" />
-              </View>
-              <Text style={styles.gridText}>PhilHealth{'\n'}CF1</Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity style={styles.gridItem} onPress={() => router.push(`/reference`)}>
-              <View style={[styles.gridIcon, { backgroundColor: '#FDF1E5' }]}>
-                <Users size={24} color="#FF9500" />
-              </View>
-              <Text style={styles.gridText}>Bereavement{'\n'}LCR</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.gridItem} onPress={() => router.push(`/qr`)}>
-              <View style={[styles.gridIcon, { backgroundColor: '#F2F2F7' }]}>
-                <QrCode size={24} color="#8E8E93" />
-              </View>
-              <Text style={styles.gridText}>My QR{'\n'}Token</Text>
-            </TouchableOpacity>
-
+        {/* Reason for Visit */}
+        <View style={styles.reasonSection}>
+          <Text style={styles.sectionLabel}>REASON FOR VISIT TODAY?</Text>
+          <View style={styles.inputContainer}>
+            <TextInput 
+              style={styles.input}
+              placeholder="e.g. Annual Checkup, Consultation..."
+              placeholderTextColor="#A0AEC0"
+            />
+            <Edit2 color="#CBD5E0" size={18} />
           </View>
         </View>
 
-        {/* BENEFICIARIES SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Beneficiaries</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.peopleScroll}>
-            
-            <TouchableOpacity style={styles.personCard} onPress={() => router.push(`/reference`)}>
-              <View style={[styles.personAvatar, { backgroundColor: '#007AFF' }]}>
-                <Text style={styles.personInitials}>{initials}</Text>
+        {/* PhilSys Integration */}
+        <View style={styles.philsysContainer}>
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1}}>
+            <Fingerprint color="#A0AEC0" size={24} />
+            <View>
+              <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+                <Text style={styles.philsysTitle}>Biometric Link (PhilSys)</Text>
+                <View style={styles.comingSoonBadge}><Text style={styles.comingSoonText}>COMING SOON</Text></View>
               </View>
-              <Text style={styles.personName}>Me</Text>
-            </TouchableOpacity>
+              <Text style={styles.philsysSub}>Link National ID for verification</Text>
+            </View>
+          </View>
+          <View style={styles.toggleTrack}>
+            <View style={styles.toggleThumb} />
+          </View>
+        </View>
 
-            {beneficiaries.map(b => (
-              <TouchableOpacity key={b.id} style={styles.personCard}>
-                <View style={[styles.personAvatar, { backgroundColor: '#FF9500' }]}>
-                  <Text style={styles.personInitials}>
-                    {b.firstName.charAt(0)}{b.lastName.charAt(0)}
-                  </Text>
-                </View>
-                <Text style={styles.personName}>{b.firstName}</Text>
-              </TouchableOpacity>
-            ))}
+        {/* Recent Documents */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Documents</Text>
+          <TouchableOpacity><Text style={styles.seeAllText}>See All {'>'}</Text></TouchableOpacity>
+        </View>
 
-            <TouchableOpacity style={styles.personCard} onPress={() => setModalVisible(true)}>
-              <View style={[styles.personAvatar, { backgroundColor: '#E5E5EA' }]}>
-                <UserCircle2 size={24} color="#8E8E93" />
-              </View>
-              <Text style={styles.personName}>Add New</Text>
-            </TouchableOpacity>
+        <View style={styles.documentsList}>
+          {/* Doc 1 */}
+          <TouchableOpacity style={styles.docCard} onPress={() => router.push('/bill')}>
+            <View style={[styles.docIconBox, { backgroundColor: '#E6FFFA' }]}>
+              <FileText color="#319795" size={20} />
+            </View>
+            <View style={styles.docInfo}>
+              <Text style={styles.docTitle}>AI Bill Analysis</Text>
+              <Text style={styles.docSub}>St. Luke's Medical Center</Text>
+            </View>
+            <View style={styles.docRight}>
+              <Text style={styles.docDate}>OCT 12</Text>
+              <ChevronRight color="#CBD5E0" size={16} />
+            </View>
+          </TouchableOpacity>
 
-          </ScrollView>
+          {/* Doc 2 */}
+          <TouchableOpacity style={styles.docCard} onPress={() => router.push('/document')}>
+            <View style={[styles.docIconBox, { backgroundColor: '#EBF8FF' }]}>
+              <FileText color="#3182CE" size={20} />
+            </View>
+            <View style={styles.docInfo}>
+              <Text style={styles.docTitle}>Lab Results Translation</Text>
+              <Text style={styles.docSub}>Makati Medical Center</Text>
+            </View>
+            <View style={styles.docRight}>
+              <Text style={styles.docDate}>SEP 28</Text>
+              <ChevronRight color="#CBD5E0" size={16} />
+            </View>
+          </TouchableOpacity>
+
+          {/* Doc 3 */}
+          <TouchableOpacity style={styles.docCard}>
+            <View style={[styles.docIconBox, { backgroundColor: '#FFFAF0' }]}>
+              <Pill color="#DD6B20" size={20} />
+            </View>
+            <View style={styles.docInfo}>
+              <Text style={styles.docTitle}>Prescription Record</Text>
+              <Text style={styles.docSub}>The Medical City</Text>
+            </View>
+            <View style={styles.docRight}>
+              <Text style={styles.docDate}>AUG 15</Text>
+              <ChevronRight color="#CBD5E0" size={16} />
+            </View>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
 
-      {/* ADD BENEFICIARY MODAL */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Beneficiary</Text>
-            
-            <TextInput style={styles.input} placeholder="First Name" value={newFirstName} onChangeText={setNewFirstName} />
-            <TextInput style={styles.input} placeholder="Last Name" value={newLastName} onChangeText={setNewLastName} />
-            <TextInput style={styles.input} placeholder="Relationship (e.g. Spouse, Child)" value={newRel} onChangeText={setNewRel} />
-            <TextInput style={styles.input} placeholder="PhilHealth PIN" value={newPin} onChangeText={setNewPin} keyboardType="numeric" />
-            <TextInput style={styles.input} placeholder="PWD / Senior Citizen ID (Optional)" value={newSpecialId} onChangeText={setNewSpecialId} />
-            
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+      {/* Floating Bottom Tab Bar */}
+      <View style={styles.bottomNavContainer}>
+        <View style={styles.bottomNav}>
+          <TouchableOpacity style={styles.navItem}>
+            <Home color="#FFFFFF" size={24} />
+            <Text style={styles.navText}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <FolderHeart color="#A0AEC0" size={24} />
+            <Text style={[styles.navText, { color: '#A0AEC0' }]}>Vault</Text>
+          </TouchableOpacity>
+          {/* Action Menu overlay */}
+          {showMenu && (
+            <View style={styles.actionMenu}>
+              <TouchableOpacity style={styles.actionMenuItem} onPress={() => { setShowMenu(false); router.push('/scan-doc'); }}>
+                <View style={styles.actionMenuIcon}><Camera color="#007AFF" size={20} /></View>
+                <Text style={styles.actionMenuText}>Scan Medical Document</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleAddBeneficiary}>
-                <Text style={styles.saveButtonText}>Save</Text>
+              
+              <TouchableOpacity style={styles.actionMenuItem} onPress={() => { setShowMenu(false); router.push('/qr'); }}>
+                <View style={styles.actionMenuIcon}><QrCode color="#007AFF" size={20} /></View>
+                <Text style={styles.actionMenuText}>Scan Hospital QR</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
+          )}
 
+          {/* FAB Action */}
+          <View style={styles.fabContainer}>
+            <TouchableOpacity style={styles.fab} onPress={() => setShowMenu(!showMenu)}>
+              {showMenu ? <X color="#FFFFFF" size={24} /> : <Plus color="#FFFFFF" size={24} />}
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.navItem}>
+            <Building2 color="#A0AEC0" size={24} />
+            <Text style={[styles.navText, { color: '#A0AEC0' }]}>Clinics</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Settings color="#A0AEC0" size={24} />
+            <Text style={[styles.navText, { color: '#A0AEC0' }]}>Settings</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F2F2F7' },
-  title: { padding: 24, fontSize: 16, fontFamily: 'Inter_400Regular' },
-  headerBackground: { 
-    backgroundColor: '#007AFF', 
-    paddingTop: 60, 
-    paddingHorizontal: 24,
-    paddingBottom: 80,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    zIndex: 1,
-  },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  greeting: { fontFamily: 'Inter_500Medium', fontSize: 16, color: 'rgba(255,255,255,0.8)' },
-  name: { fontFamily: 'Sora_700Bold', fontSize: 28, color: '#FFFFFF', marginTop: 4 },
-  avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontFamily: 'Sora_700Bold', fontSize: 18, color: '#007AFF' },
+  container: { flex: 1, backgroundColor: '#F7FAFC' },
+  scrollContent: { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
   
-  floatingActions: {
-    position: 'absolute',
-    bottom: -60, // Overlap the bottom of the blue header
-    left: 24, right: 24,
-    flexDirection: 'row',
-    gap: 16,
-  },
-  primaryAction: {
-    flex: 1.2,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 5,
-  },
-  secondaryAction: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 5,
-  },
-  iconCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E5F1FF', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  primaryActionTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 16, color: '#000000', marginBottom: 4 },
-  primaryActionSub: { fontFamily: 'Inter_400Regular', fontSize: 12, color: '#8E8E93' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 },
+  greeting: { fontFamily: 'Sora_700Bold', fontSize: 28, color: '#1A202C', marginBottom: 4 },
+  subGreeting: { fontFamily: 'Inter_400Regular', fontSize: 14, color: '#718096' },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E2E8F0' },
 
-  scrollContent: { flex: 1, zIndex: 0, marginTop: 220 }, // Margin to clear the header
-  section: { paddingHorizontal: 24, marginBottom: 32 },
-  sectionTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 20, color: '#000000', marginBottom: 16 },
-  
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+
+  reasonSection: { marginBottom: 24 },
+  sectionLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: '#A0AEC0', letterSpacing: 1, marginBottom: 12 },
+  inputContainer: { 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 16, 
+    paddingHorizontal: 20, 
+    paddingVertical: 16, 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2
+  },
+  input: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 15, color: '#2D3748' },
+
+  philsysContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
     justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 20, 
+    padding: 20, 
+    marginBottom: 40,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2
+  },
+  philsysTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 14, color: '#4A5568' },
+  comingSoonBadge: { backgroundColor: '#F7FAFC', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  comingSoonText: { fontFamily: 'Inter_600SemiBold', fontSize: 8, color: '#A0AEC0', letterSpacing: 0.5 },
+  philsysSub: { fontFamily: 'Inter_400Regular', fontSize: 12, color: '#A0AEC0', marginTop: 2 },
+  toggleTrack: { width: 44, height: 24, borderRadius: 12, backgroundColor: '#EDF2F7', justifyContent: 'center', paddingHorizontal: 2 },
+  toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  sectionTitle: { fontFamily: 'Sora_700Bold', fontSize: 20, color: '#2D3748' },
+  seeAllText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#3182CE' },
+
+  documentsList: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 3 },
+  docCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F7FAFC' },
+  docIconBox: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  docInfo: { flex: 1 },
+  docTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 15, color: '#2D3748', marginBottom: 4 },
+  docSub: { fontFamily: 'Inter_400Regular', fontSize: 13, color: '#A0AEC0' },
+  docRight: { alignItems: 'flex-end', justifyContent: 'center' },
+  docDate: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: '#A0AEC0', marginBottom: 8, letterSpacing: 0.5 },
+
+  bottomNavContainer: { position: 'absolute', bottom: 16, left: 16, right: 16 },
+  bottomNav: { 
+    backgroundColor: '#1A202C', 
+    borderRadius: 24, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 24, 
+    paddingVertical: 2,
+    shadowColor: '#1A202C', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 24, elevation: 10
+  },
+  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  navText: { fontFamily: 'Inter_500Medium', fontSize: 10, color: '#FFFFFF' },
+  
+  actionMenu: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    gap: 20,
+    borderRadius: 16,
+    padding: 8,
+    width: 240,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 15
   },
-  gridItem: { alignItems: 'center', width: '20%' },
-  gridIcon: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  gridText: { fontFamily: 'Inter_500Medium', fontSize: 11, color: '#000000', textAlign: 'center' },
-
-  peopleScroll: { gap: 16 },
-  personCard: { alignItems: 'center', width: 72 },
-  personAvatar: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  personInitials: { fontFamily: 'Sora_600SemiBold', fontSize: 20, color: '#FFFFFF' },
-  personName: { fontFamily: 'Inter_500Medium', fontSize: 13, color: '#000000' },
-
-  // Modal styles
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24 },
-  modalTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 20, color: '#000000', marginBottom: 24 },
-  input: {
-    backgroundColor: '#F2F2F7', borderRadius: 12, padding: 16,
-    fontFamily: 'Inter_400Regular', fontSize: 16, color: '#000000', marginBottom: 12
+  actionMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 12,
+    borderRadius: 12,
   },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 12 },
-  cancelButton: { padding: 16, borderRadius: 12, alignItems: 'center' },
-  cancelButtonText: { fontFamily: 'Inter_500Medium', fontSize: 16, color: '#8E8E93' },
-  saveButton: { backgroundColor: '#007AFF', paddingHorizontal: 24, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
-  saveButtonText: { fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#FFFFFF' },
+  actionMenuIcon: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: '#EBF4FF', alignItems: 'center', justifyContent: 'center'
+  },
+  actionMenuText: {
+    fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#2D3748'
+  },
+  fabContainer: { position: 'relative', top: -16, alignItems: 'center', justifyContent: 'center' },
+  fab: { 
+    width: 72, height: 72, borderRadius: 36, backgroundColor: '#3182CE', 
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 6, borderColor: '#F7FAFC',
+    shadowColor: '#3182CE', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8
+  }
 });
