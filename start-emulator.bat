@@ -1,3 +1,0 @@
-@echo off
-echo Starting Android Emulator (Pixel_10)...
-"C:\Users\Lutha\AppData\Local\Android\Sdk\emulator\emulator.exe" -avd Pixel_10 -no-snapshot-load
