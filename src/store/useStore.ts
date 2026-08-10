@@ -54,6 +54,7 @@ interface AdmissionStore {
   updateMasterProfile: (data: Partial<MasterProfileState>) => void;
   updateVisitLog: (data: Partial<VisitLogState>) => void;
   addBeneficiary: (b: Beneficiary) => void;
+  updateBeneficiary: (id: string, data: Partial<Beneficiary>) => void;
   logout: () => void;
 }
 
@@ -90,6 +91,12 @@ export const useStore = create<AdmissionStore>((set) => ({
 
   addBeneficiary: (b) => set((state) => ({
     beneficiaries: [...state.beneficiaries, b]
+  })),
+
+  updateBeneficiary: (id, data) => set((state) => ({
+    beneficiaries: state.beneficiaries.map((beneficiary) => (
+      beneficiary.id === id ? { ...beneficiary, ...data } : beneficiary
+    ))
   })),
   
   logout: () => set({ 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStore } from '../store/useStore';
 import { ChevronLeft, UploadCloud, CheckCircle2 } from 'lucide-react-native';
 
@@ -9,34 +9,37 @@ const PRIMARY_BLUE = '#007AFF';
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ edit?: string }>();
   const { updateMasterProfile, addBeneficiary, setHasOnboarded } = useStore();
+  const masterProfile = useStore((state) => state.masterProfile);
+  const isEditing = params.edit === '1';
   
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(isEditing ? 2 : 1);
   const totalSteps = 6;
 
-  const [hasMDR, setHasMDR] = useState<boolean | null>(null);
+  const [hasMDR, setHasMDR] = useState<boolean | null>(isEditing ? true : null);
   const [mdrImageUri, setMdrImageUri] = useState<string | null>(null);
 
   // Form Fields
-  const [pin, setPin] = useState('');
-  const [fullName, setFullName] = useState(''); 
-  const [dob, setDob] = useState('');
-  const [sex, setSex] = useState('');
-  const [civilStatus, setCivilStatus] = useState('');
-  const [address, setAddress] = useState('');
-  const [contactNumber, setContactNumber] = useState('');
-  const [memberCategory, setMemberCategory] = useState('');
+  const [pin, setPin] = useState(isEditing ? masterProfile.philhealthId : '');
+  const [fullName, setFullName] = useState(isEditing ? `${masterProfile.firstName} ${masterProfile.lastName}`.trim() : '');
+  const [dob, setDob] = useState(isEditing ? masterProfile.dateOfBirth : '');
+  const [sex, setSex] = useState(isEditing ? masterProfile.sex : '');
+  const [civilStatus, setCivilStatus] = useState(isEditing ? masterProfile.civilStatus : '');
+  const [address, setAddress] = useState(isEditing ? masterProfile.address.street : '');
+  const [contactNumber, setContactNumber] = useState(isEditing ? masterProfile.contactNumber : '');
+  const [memberCategory, setMemberCategory] = useState(isEditing ? masterProfile.memberCategory : '');
   
-  const [bloodType, setBloodType] = useState('');
-  const [allergies, setAllergies] = useState('');
-  const [medications, setMedications] = useState('');
-  const [chronicConditions, setChronicConditions] = useState('');
-  const [emergencyName, setEmergencyName] = useState('');
-  const [emergencyRelationship, setEmergencyRelationship] = useState('');
-  const [emergencyPhone, setEmergencyPhone] = useState('');
-  const [hmoName, setHmoName] = useState('');
-  const [hmoPolicyNumber, setHmoPolicyNumber] = useState('');
-  const [secondaryIdUri, setSecondaryIdUri] = useState('');
+  const [bloodType, setBloodType] = useState(isEditing ? masterProfile.bloodType : '');
+  const [allergies, setAllergies] = useState(isEditing ? masterProfile.knownAllergies.join(', ') : '');
+  const [medications, setMedications] = useState(isEditing ? masterProfile.currentMedications.join(', ') : '');
+  const [chronicConditions, setChronicConditions] = useState(isEditing ? masterProfile.chronicConditions.join(', ') : '');
+  const [emergencyName, setEmergencyName] = useState(isEditing ? masterProfile.emergencyContact.name : '');
+  const [emergencyRelationship, setEmergencyRelationship] = useState(isEditing ? masterProfile.emergencyContact.relationship : '');
+  const [emergencyPhone, setEmergencyPhone] = useState(isEditing ? masterProfile.emergencyContact.phone : '');
+  const [hmoName, setHmoName] = useState(isEditing ? masterProfile.hmoName : '');
+  const [hmoPolicyNumber, setHmoPolicyNumber] = useState(isEditing ? masterProfile.hmoPolicyNumber : '');
+  const [secondaryIdUri, setSecondaryIdUri] = useState(isEditing ? masterProfile.secondaryIdPhotoUrl : '');
 
   // Beneficiaries (Local State)
   const [onboardingBeneficiaries, setOnboardingBeneficiaries] = useState<{firstName: string, lastName: string, relationship: string, pin?: string, specialId?: string}[]>([]);
@@ -118,7 +121,7 @@ export default function OnboardingScreen() {
 
   const nextStep = () => setStep(s => Math.min(totalSteps, s + 1));
   const prevStep = () => {
-    if (step === 1) {
+    if (step === 1 || (isEditing && step === 2)) {
       router.back();
     } else {
       setStep(s => Math.max(1, s - 1));

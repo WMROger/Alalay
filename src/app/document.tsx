@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Maximize2, FileText, Lightbulb } from 'lucide-react-native';
 
@@ -7,12 +7,8 @@ export default function DocumentReaderScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Background Document Image */}
-      <ImageBackground 
-        source={{ uri: 'https://images.unsplash.com/photo-1618042164219-62c820f10723?q=80&w=600&auto=format&fit=crop' }} 
-        style={styles.imageHeader}
-        imageStyle={{ opacity: 0.4 }}
-      >
+      {/* Offline-safe branded header */}
+      <View style={styles.imageHeader}>
         <SafeAreaView>
           <View style={styles.topBar}>
             <TouchableOpacity style={styles.glassBtn} onPress={() => router.back()}>
@@ -26,7 +22,12 @@ export default function DocumentReaderScreen() {
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      </ImageBackground>
+        <View style={styles.heroCopy}>
+          <Text style={styles.heroEyebrow}>HOSPITAL-RANGE COMPARISON</Text>
+          <Text style={styles.heroTitle}>Your lab result</Text>
+          <Text style={styles.heroSubtitle}>Compared only with the ranges shown on this report</Text>
+        </View>
+      </View>
 
       {/* Main Content Sheet */}
       <View style={styles.sheet}>
@@ -114,11 +115,15 @@ export default function DocumentReaderScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1A202C' },
   
-  imageHeader: { height: 280, width: '100%' },
+  imageHeader: { height: 280, width: '100%', backgroundColor: '#243B68' },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16 },
   glassBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   glassPill: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   glassText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#FFFFFF' },
+  heroCopy: { paddingHorizontal: 28, marginTop: 30 },
+  heroEyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 1.4, color: '#9EC5FF', marginBottom: 7 },
+  heroTitle: { fontFamily: 'Sora_700Bold', fontSize: 27, color: '#FFFFFF' },
+  heroSubtitle: { fontFamily: 'Inter_400Regular', fontSize: 13, color: '#D4E1F5', marginTop: 5 },
 
   sheet: { 
     flex: 1, 
