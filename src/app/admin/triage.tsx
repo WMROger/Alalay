@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing, TextInput } from 'react-native';
 import { ClipboardList, KeyRound, UserPlus, Smartphone, QrCode } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useStore } from '../../store/useStore';
+import { createInitialAdmissionSteps, useStore } from '../../store/useStore';
+import { StaffStatusBoard } from '../../components/StaffStatusBoard';
 
 export default function AdmissionQueueScreen() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function AdmissionQueueScreen() {
   const [enteredCode, setEnteredCode] = useState('');
   const masterProfile = useStore(state => state.masterProfile);
   const visitLog = useStore(state => state.visitLog);
+  const updateVisitLog = useStore(state => state.updateVisitLog);
   
   // Radar Animation
   const [pulseAnim] = useState(new Animated.Value(0));
@@ -30,6 +32,19 @@ export default function AdmissionQueueScreen() {
   }, [scanState]);
 
   const simulateIncomingScan = () => {
+    if (!visitLog.hospitalName) {
+      updateVisitLog({
+        hospitalName: 'Bacolod Doctors Hospital',
+        deskName: 'Main Admission Desk',
+        modeOfAdmission: 'ER',
+        matchCode: '428',
+        status: 'pending',
+        dataSharingConsent: true,
+        supportsLiveStatus: true,
+        checkedInAt: new Date().toISOString(),
+        admissionSteps: createInitialAdmissionSteps(),
+      });
+    }
     setScanState('receiving');
     setTimeout(() => {
       setScanState('pending');
@@ -45,6 +60,7 @@ export default function AdmissionQueueScreen() {
 
   const confirmMatchCode = () => {
     if (enteredCode === expectedMatchCode) {
+      updateVisitLog({ status: 'matched' });
       setScanState('matched');
     }
   };
@@ -151,7 +167,9 @@ export default function AdmissionQueueScreen() {
         )}
 
         {scanState === 'matched' && (
-          <View style={styles.pdfViewerContainer}>
+          <View style={styles.completeArea}>
+            <StaffStatusBoard />
+            <View style={styles.pdfViewerContainer}>
             <View style={styles.pdfViewerHeader}>
               <TouchableOpacity onPress={handleReject} style={{ padding: 8 }}>
                 <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_500Medium', fontSize: 14 }}>Close</Text>
@@ -270,7 +288,8 @@ export default function AdmissionQueueScreen() {
                 </View>
 
               </View>
-            </ScrollView>
+              </ScrollView>
+            </View>
           </View>
         )}
 

@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useStore } from '../store/useStore';
+import { createInitialAdmissionSteps, useStore } from '../store/useStore';
 
 type AdmissionMode = 'ER' | 'OPD' | 'Transfer';
 
@@ -21,20 +21,23 @@ interface HospitalDesk {
   deskId: string;
   hospitalName: string;
   deskName: string;
+  supportsLiveStatus: boolean;
 }
 
 const DEMO_DESKS: Record<'general' | 'specialist', HospitalDesk> = {
   general: {
-    hospitalId: 'vsmmc',
+    hospitalId: 'bacolod-doctors',
     deskId: 'main-admissions',
-    hospitalName: 'Vicente Sotto Memorial Medical Center',
+    hospitalName: 'Bacolod Doctors Hospital',
     deskName: 'Main Admission Desk',
+    supportsLiveStatus: true,
   },
   specialist: {
-    hospitalId: 'chong-hua',
-    deskId: 'medical-arts',
-    hospitalName: 'Chong Hua Hospital',
-    deskName: 'Medical Arts Admission Desk',
+    hospitalId: 'non-partner-demo',
+    deskId: 'general-admissions',
+    hospitalName: 'Community Hospital (Demo)',
+    deskName: 'General Admission Desk',
+    supportsLiveStatus: false,
   },
 };
 
@@ -66,7 +69,7 @@ export default function QRScreen() {
 
     // The production backend will validate the signed URL before returning desk data.
     // For the hackathon frontend demo, known QR content selects one of two seeded desks.
-    const desk = data.toLowerCase().includes('chong') ? DEMO_DESKS.specialist : DEMO_DESKS.general;
+    const desk = data.toLowerCase().includes('non-partner') ? DEMO_DESKS.specialist : DEMO_DESKS.general;
     showConsentForDesk(desk);
   };
 
@@ -94,6 +97,9 @@ export default function QRScreen() {
         matchCode: code,
         status: 'pending',
         dataSharingConsent: true,
+        supportsLiveStatus: activeDesk.supportsLiveStatus,
+        checkedInAt: new Date().toISOString(),
+        admissionSteps: createInitialAdmissionSteps(),
       });
       setMatchCode(code);
       setIsSubmitting(false);
@@ -116,10 +122,10 @@ export default function QRScreen() {
         <Text style={styles.demoDivider}>OR USE A SEEDED DEMO DESK</Text>
         <View style={styles.permissionDemoRow}>
           <TouchableOpacity style={styles.permissionDemoButton} onPress={() => { setDemoMode(true); showConsentForDesk(DEMO_DESKS.general); }}>
-            <Text style={styles.permissionDemoButtonText}>VSMMC</Text>
+            <Text style={styles.permissionDemoButtonText}>Live partner</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.permissionDemoButton} onPress={() => { setDemoMode(true); showConsentForDesk(DEMO_DESKS.specialist); }}>
-            <Text style={styles.permissionDemoButtonText}>Chong Hua</Text>
+            <Text style={styles.permissionDemoButtonText}>General guide</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.textButton} onPress={() => router.back()}>
@@ -160,10 +166,10 @@ export default function QRScreen() {
             <Text style={styles.demoLabel}>Seeded demo desks</Text>
             <View style={styles.demoActions}>
               <TouchableOpacity style={styles.demoButton} onPress={() => showConsentForDesk(DEMO_DESKS.general)}>
-                <Text style={styles.demoButtonText}>VSMMC desk</Text>
+                <Text style={styles.demoButtonText}>Live partner</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.demoButton} onPress={() => showConsentForDesk(DEMO_DESKS.specialist)}>
-                <Text style={styles.demoButtonText}>Chong Hua desk</Text>
+                <Text style={styles.demoButtonText}>General guide</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -240,6 +246,11 @@ export default function QRScreen() {
             <CheckCircle2 color="#38A169" size={58} />
             <Text style={styles.successTitle}>You're checked in</Text>
             <Text style={styles.successSubtitle}>{activeDesk.hospitalName} - {activeDesk.deskName}</Text>
+            <View style={[styles.statusAvailability, !activeDesk.supportsLiveStatus && styles.statusAvailabilityGuide]}>
+              <Text style={[styles.statusAvailabilityText, !activeDesk.supportsLiveStatus && styles.statusAvailabilityTextGuide]}>
+                {activeDesk.supportsLiveStatus ? 'Live hospital status available' : 'General next-step guide available'}
+              </Text>
+            </View>
             <View style={styles.codeCard}>
               <Text style={styles.codeLabel}>YOUR MATCH CODE</Text>
               <Text style={styles.codeValue}>{matchCode}</Text>
@@ -316,6 +327,10 @@ const styles = StyleSheet.create({
   successSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, alignItems: 'center' },
   successTitle: { fontFamily: 'Sora_700Bold', fontSize: 27, color: '#1A202C', marginTop: 16 },
   successSubtitle: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20, color: '#718096', textAlign: 'center', marginTop: 6 },
+  statusAvailability: { backgroundColor: '#E6F5F1', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, marginTop: 11 },
+  statusAvailabilityGuide: { backgroundColor: '#EAF2FF' },
+  statusAvailabilityText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: '#137A67' },
+  statusAvailabilityTextGuide: { color: '#246BCE' },
   codeCard: { width: '100%', backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 18, padding: 22, alignItems: 'center', marginVertical: 24 },
   codeLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#718096', letterSpacing: 1.4 },
   codeValue: { width: 220, alignSelf: 'center', textAlign: 'center', fontFamily: 'Sora_700Bold', fontSize: 56, color: '#007AFF', letterSpacing: 4, marginVertical: 6 },

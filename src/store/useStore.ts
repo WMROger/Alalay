@@ -7,7 +7,77 @@ export interface Beneficiary {
   relationship: string;
   pin?: string;
   specialId?: string;
+  dateOfBirth?: string;
+  sex?: string;
+  contactNumber?: string;
+  knownAllergies?: string[];
+  currentMedications?: string[];
+  chronicConditions?: string[];
+  emergencyContact?: { name: string; relationship: string; phone: string };
+  prescriptionPhotoUrl?: string;
+  verificationStatus?: 'verified' | 'pending_confirmation' | 'needs_information';
+  profileSource?: 'egov' | 'manual' | 'demo';
 }
+
+export interface NotificationPreferences {
+  healthOpportunitiesEnabled: boolean;
+  seniorWellness: boolean;
+  philhealthPrograms: boolean;
+  vaccinations: boolean;
+  localHealthServices: boolean;
+}
+
+export type AdmissionStepId =
+  | 'check_in'
+  | 'room_assignment'
+  | 'consent_billing'
+  | 'philhealth_eligibility';
+
+export type AdmissionStepStatus = 'done' | 'current' | 'pending';
+
+export interface AdmissionStepState {
+  id: AdmissionStepId;
+  title: string;
+  status: AdmissionStepStatus;
+  location: string;
+  guidance: string;
+  updatedAt: string;
+}
+
+export const createInitialAdmissionSteps = (): AdmissionStepState[] => [
+  {
+    id: 'check_in',
+    title: 'Check-In',
+    status: 'done',
+    location: 'Admission desk',
+    guidance: 'Your hospital check-in was received.',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'room_assignment',
+    title: 'Room Assignment',
+    status: 'pending',
+    location: 'Ask the admission desk',
+    guidance: 'Hospital staff will update this when a room or care area is assigned.',
+    updatedAt: '',
+  },
+  {
+    id: 'consent_billing',
+    title: 'Consent & Billing Arrangement',
+    status: 'current',
+    location: 'Admitting Section, ground floor',
+    guidance: 'Please review the consent forms and arrange billing with the Admitting Section.',
+    updatedAt: '',
+  },
+  {
+    id: 'philhealth_eligibility',
+    title: 'PhilHealth Eligibility Confirmation',
+    status: 'pending',
+    location: 'PhilHealth or billing desk',
+    guidance: 'The hospital will confirm the member or dependent eligibility presented for this visit.',
+    updatedAt: '',
+  },
+];
 
 // 1. Define Types based on Schema
 export interface MasterProfileState {
@@ -28,6 +98,8 @@ export interface MasterProfileState {
   hmoName: string;
   hmoPolicyNumber: string;
   secondaryIdPhotoUrl: string;
+  identitySource: 'egov' | 'mdr' | 'manual' | 'demo' | '';
+  notificationPreferences: NotificationPreferences;
 }
 
 export interface VisitLogState {
@@ -38,6 +110,9 @@ export interface VisitLogState {
   matchCode: string;
   status: 'pending' | 'matched' | 'completed';
   dataSharingConsent: boolean;
+  supportsLiveStatus: boolean;
+  checkedInAt: string;
+  admissionSteps: AdmissionStepState[];
 }
 
 interface AdmissionStore {
@@ -53,6 +128,7 @@ interface AdmissionStore {
   // Actions
   updateMasterProfile: (data: Partial<MasterProfileState>) => void;
   updateVisitLog: (data: Partial<VisitLogState>) => void;
+  updateAdmissionStep: (id: AdmissionStepId, status: AdmissionStepStatus) => void;
   addBeneficiary: (b: Beneficiary) => void;
   updateBeneficiary: (id: string, data: Partial<Beneficiary>) => void;
   logout: () => void;
@@ -64,12 +140,21 @@ const initialMasterProfile: MasterProfileState = {
   philhealthId: '', memberCategory: '', bloodType: '', knownAllergies: [],
   currentMedications: [], chronicConditions: [],
   emergencyContact: { name: '', relationship: '', phone: '' },
-  hmoName: '', hmoPolicyNumber: '', secondaryIdPhotoUrl: ''
+  hmoName: '', hmoPolicyNumber: '', secondaryIdPhotoUrl: '',
+  identitySource: '',
+  notificationPreferences: {
+    healthOpportunitiesEnabled: false,
+    seniorWellness: true,
+    philhealthPrograms: true,
+    vaccinations: true,
+    localHealthServices: true,
+  }
 };
 
 const initialVisitLog: VisitLogState = {
   hospitalName: '', deskName: '', modeOfAdmission: 'ER', visitNote: '',
-  matchCode: '', status: 'pending', dataSharingConsent: false
+  matchCode: '', status: 'pending', dataSharingConsent: false,
+  supportsLiveStatus: false, checkedInAt: '', admissionSteps: []
 };
 
 // 2. Create Store
@@ -88,6 +173,27 @@ export const useStore = create<AdmissionStore>((set) => ({
   updateVisitLog: (data) => set((state) => ({
     visitLog: { ...state.visitLog, ...data }
   })),
+
+  updateAdmissionStep: (id, status) => set((state) => {
+    const admissionSteps = state.visitLog.admissionSteps.map((step) => (
+      step.id === id
+        ? { ...step, status, updatedAt: new Date().toISOString() }
+        : step
+    ));
+    const journeyComplete = admissionSteps.length > 0 && admissionSteps.every((step) => step.status === 'done');
+
+    return {
+      visitLog: {
+        ...state.visitLog,
+        admissionSteps,
+        status: journeyComplete
+          ? 'completed'
+          : state.visitLog.status === 'completed'
+            ? 'matched'
+            : state.visitLog.status,
+      }
+    };
+  }),
 
   addBeneficiary: (b) => set((state) => ({
     beneficiaries: [...state.beneficiaries, b]

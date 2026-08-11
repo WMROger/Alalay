@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Href, useRouter } from 'expo-router';
-import { ArrowRight, FileText, HeartPulse, ShieldCheck, UserRound, UsersRound } from 'lucide-react-native';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ArrowRight, FileText, HeartPulse, LogOut, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react-native';
+import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppBottomNav } from '../components/AppBottomNav';
 import { useStore } from '../store/useStore';
 
@@ -19,9 +20,17 @@ export default function ProfileScreen() {
   const router = useRouter();
   const masterProfile = useStore((state) => state.masterProfile);
   const beneficiaries = useStore((state) => state.beneficiaries);
+  const logout = useStore((state) => state.logout);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const firstName = masterProfile.firstName || 'Juan';
   const lastName = masterProfile.lastName || 'Dela Cruz';
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+
+  const handleLogout = () => {
+    logout();
+    setShowLogoutConfirmation(false);
+    router.replace('/login');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -80,10 +89,51 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <Text style={styles.sectionTitle}>Account</Text>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => setShowLogoutConfirmation(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Log out of Alalay"
+        >
+          <View style={styles.logoutIcon}><LogOut color="#B33A3A" size={20} /></View>
+          <View style={styles.menuCopy}>
+            <Text style={styles.logoutTitle}>Log out</Text>
+            <Text style={styles.menuText}>Return to the Alalay sign-in screen</Text>
+          </View>
+        </TouchableOpacity>
+
         <Text style={styles.privacyText}>Alalay keeps patient profiles private until you approve a hospital’s request.</Text>
       </ScrollView>
 
       <AppBottomNav active="profile" />
+
+      <Modal
+        visible={showLogoutConfirmation}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLogoutConfirmation(false)}
+      >
+        <View style={styles.modalRoot}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowLogoutConfirmation(false)} />
+          <View style={styles.logoutSheet}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setShowLogoutConfirmation(false)} accessibilityLabel="Close logout confirmation">
+              <X color={COLORS.muted} size={20} />
+            </TouchableOpacity>
+            <View style={styles.logoutModalIcon}><LogOut color="#B33A3A" size={27} /></View>
+            <Text style={styles.logoutModalTitle}>Log out of Alalay?</Text>
+            <Text style={styles.logoutModalText}>You will return to the sign-in screen. This prototype clears the locally stored demo profile when you log out.</Text>
+            <View style={styles.logoutActions}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowLogoutConfirmation(false)} accessibilityRole="button">
+                <Text style={styles.cancelButtonText}>Stay signed in</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmLogoutButton} onPress={handleLogout} accessibilityRole="button">
+                <Text style={styles.confirmLogoutText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -113,5 +163,20 @@ const styles = StyleSheet.create({
   menuCopy: { flex: 1 },
   menuTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: COLORS.ink },
   menuText: { fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 15, color: COLORS.muted, marginTop: 3 },
+  logoutButton: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F0D0D0', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 11 },
+  logoutIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center' },
+  logoutTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#A83232' },
   privacyText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: COLORS.muted, textAlign: 'center', marginTop: 20, paddingHorizontal: 15 },
+  modalRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
+  modalBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(10, 28, 34, 0.58)' },
+  logoutSheet: { width: '100%', maxWidth: 420, alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 26, paddingHorizontal: 22, paddingTop: 28, paddingBottom: 22 },
+  closeButton: { position: 'absolute', top: 13, right: 13, width: 39, height: 39, borderRadius: 13, backgroundColor: '#F0F4F3', alignItems: 'center', justifyContent: 'center' },
+  logoutModalIcon: { width: 61, height: 61, borderRadius: 20, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
+  logoutModalTitle: { fontFamily: 'Sora_700Bold', fontSize: 20, color: COLORS.ink },
+  logoutModalText: { maxWidth: 340, fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 19, color: COLORS.muted, textAlign: 'center', marginTop: 7 },
+  logoutActions: { width: '100%', flexDirection: 'row', gap: 9, marginTop: 20 },
+  cancelButton: { flex: 1, minHeight: 49, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.line, borderRadius: 15 },
+  cancelButtonText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: COLORS.muted },
+  confirmLogoutButton: { flex: 1, minHeight: 49, alignItems: 'center', justifyContent: 'center', backgroundColor: '#B33A3A', borderRadius: 15 },
+  confirmLogoutText: { fontFamily: 'Sora_600SemiBold', fontSize: 12, color: '#FFFFFF' },
 });

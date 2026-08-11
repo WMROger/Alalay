@@ -1,11 +1,13 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, LockKeyhole, ShieldCheck, Trash2, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function PrivacyConsentScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ source?: string }>();
   const [accepted, setAccepted] = useState(false);
+  const onboardingRoute = params.source === 'egov' ? '/onboarding?source=egov' : '/onboarding';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -56,7 +58,7 @@ export default function PrivacyConsentScreen() {
 
         <TouchableOpacity
           style={[styles.continueButton, !accepted && styles.continueButtonDisabled]}
-          onPress={() => router.replace('/onboarding')}
+          onPress={() => router.replace(onboardingRoute)}
           disabled={!accepted}
         >
           <Text style={styles.continueButtonText}>Agree & Set Up Profile</Text>

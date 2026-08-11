@@ -137,7 +137,12 @@ export default function FamilyScreen() {
     if (editingId) {
       updateBeneficiary(editingId, values);
     } else {
-      addBeneficiary({ id: `beneficiary-${Date.now()}`, ...values });
+      addBeneficiary({
+        id: `beneficiary-${Date.now()}`,
+        ...values,
+        verificationStatus: 'needs_information',
+        profileSource: 'manual',
+      });
     }
 
     setFormOpen(false);
@@ -225,7 +230,17 @@ export default function FamilyScreen() {
             </View>
           </View>
 
-          {beneficiaries.map((beneficiary, index) => (
+          {beneficiaries.map((beneficiary, index) => {
+            const status = beneficiary.verificationStatus === 'verified'
+              ? 'Verified dependent'
+              : beneficiary.verificationStatus === 'pending_confirmation'
+                ? 'Pending their confirmation'
+                : beneficiary.pin
+                  ? 'Admission QR ready'
+                  : 'Needs more information';
+            const hasReadyProfile = Boolean(beneficiary.pin);
+
+            return (
             <View style={styles.personCard} key={beneficiary.id}>
               <View style={styles.personMain}>
                 <View style={[styles.avatar, index % 2 === 0 && styles.avatarBlue]}>
@@ -233,10 +248,10 @@ export default function FamilyScreen() {
                 </View>
                 <View style={styles.personCopy}>
                   <Text style={styles.personName}>{beneficiary.firstName} {beneficiary.lastName}</Text>
-                  <Text style={styles.relationship}>{beneficiary.relationship}</Text>
+                  <Text style={styles.relationship}>{beneficiary.relationship}{beneficiary.dateOfBirth ? ` · ${beneficiary.dateOfBirth}` : ''}</Text>
                   <View style={styles.statusRow}>
-                    {beneficiary.pin ? <CheckCircle2 color={COLORS.primary} size={14} /> : <UserRound color={COLORS.muted} size={14} />}
-                    <Text style={[styles.statusText, !beneficiary.pin && styles.statusTextMuted]}>{beneficiary.pin ? 'Admission QR ready' : 'Add a PIN to enable QR'}</Text>
+                    {beneficiary.verificationStatus === 'verified' ? <CheckCircle2 color={COLORS.primary} size={14} /> : <UserRound color={COLORS.muted} size={14} />}
+                    <Text style={[styles.statusText, beneficiary.verificationStatus !== 'verified' && styles.statusTextMuted]}>{status}</Text>
                   </View>
                 </View>
                 <TouchableOpacity
@@ -253,16 +268,17 @@ export default function FamilyScreen() {
                   <Text style={styles.secondaryActionText}>Edit details</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.qrAction, !beneficiary.pin && styles.actionDisabled]}
+                  style={[styles.qrAction, !hasReadyProfile && styles.actionDisabled]}
                   onPress={() => openQrConfirmation(beneficiary)}
-                  disabled={!beneficiary.pin}
+                  disabled={!hasReadyProfile}
                 >
                   <QrCodeIcon color="#FFFFFF" size={18} />
                   <Text style={styles.qrActionText}>View QR</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          ))}
+            );
+          })}
 
           <TouchableOpacity style={styles.addCard} onPress={openAddForm} activeOpacity={0.8}>
             <View style={styles.addCardIcon}><Plus color={COLORS.primary} size={24} /></View>

@@ -23,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import { AppBottomNav } from '../components/AppBottomNav';
+import { AdmissionJourney } from '../components/AdmissionJourney';
 import { useStore } from '../store/useStore';
 
 const COLORS = {
@@ -154,6 +155,8 @@ export default function DashboardScreen() {
             <ArrowRight color={COLORS.navy} size={19} />
           </TouchableOpacity>
         </View>
+
+        <AdmissionJourney />
 
         <View style={styles.sectionHeadingRow}>
           <View>
