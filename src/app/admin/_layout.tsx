@@ -1,10 +1,17 @@
-import { Slot, usePathname, useRouter } from 'expo-router';
+import { Redirect, Slot, usePathname, useRouter } from 'expo-router';
 import { BookOpen, Building2, ClipboardList, FileJson, LogOut } from 'lucide-react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useStore } from '../../store/useStore';
 
 export default function AdminLayout() {
   const router = useRouter();
   const pathname = usePathname();
+  const hospitalSession = useStore((state) => state.hospitalSession);
+  const logoutHospital = useStore((state) => state.logoutHospital);
+
+  if (!hospitalSession.isAuthenticated) {
+    return <Redirect href="/hospital-login" />;
+  }
 
   const navItems = [
     { name: 'Identity', path: '/admin', icon: Building2 },
@@ -19,7 +26,12 @@ export default function AdminLayout() {
       <View style={styles.sidebar}>
         <View style={styles.brandContainer}>
           <Text style={styles.brandTitle}>Alalay Admin</Text>
-          <Text style={styles.brandSubtitle}>Hospital Portal</Text>
+          <Text style={styles.brandSubtitle} numberOfLines={2}>{hospitalSession.hospitalName}</Text>
+          <View style={[styles.verificationBadge, hospitalSession.verificationStatus === 'pending_review' && styles.pendingBadge]}>
+            <Text style={[styles.verificationText, hospitalSession.verificationStatus === 'pending_review' && styles.pendingText]}>
+              {hospitalSession.verificationStatus === 'verified' ? 'VERIFIED FACILITY' : 'PENDING FACILITY REVIEW'}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.navContainer}>
@@ -40,9 +52,13 @@ export default function AdminLayout() {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={() => router.replace('/')}>
+          <View style={styles.staffCard}>
+            <Text style={styles.staffName}>{hospitalSession.staffName}</Text>
+            <Text style={styles.staffRole}>{hospitalSession.role}</Text>
+          </View>
+          <TouchableOpacity style={styles.logoutBtn} onPress={() => { logoutHospital(); router.replace('/hospital-login'); }}>
             <LogOut color="#718096" size={20} />
-            <Text style={styles.logoutText}>Exit Portal</Text>
+            <Text style={styles.logoutText}>Sign out</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -84,6 +100,10 @@ const styles = StyleSheet.create({
     color: '#718096',
     marginTop: 4,
   },
+  verificationBadge: { alignSelf: 'flex-start', backgroundColor: '#E6F5F1', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5, marginTop: 10 },
+  pendingBadge: { backgroundColor: '#FFF5E5' },
+  verificationText: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 0.7, color: '#137A67' },
+  pendingText: { color: '#975A16' },
   navContainer: {
     flex: 1,
     gap: 12,
@@ -112,6 +132,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#E2E8F0',
     paddingTop: 24,
   },
+  staffCard: { paddingHorizontal: 16, paddingBottom: 10 },
+  staffName: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#2D3748' },
+  staffRole: { fontFamily: 'Inter_400Regular', fontSize: 9, color: '#718096', marginTop: 3 },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',

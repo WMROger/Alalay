@@ -7,7 +7,8 @@ export default function PrivacyConsentScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ source?: string }>();
   const [accepted, setAccepted] = useState(false);
-  const onboardingRoute = params.source === 'egov' ? '/onboarding?source=egov' : '/onboarding';
+  const isEgov = params.source === 'egov';
+  const onboardingRoute = isEgov ? '/onboarding?source=egov' : '/onboarding';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -23,14 +24,18 @@ export default function PrivacyConsentScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.iconWrap}><ShieldCheck color="#276749" size={36} /></View>
         <Text style={styles.title}>Your data stays under your control</Text>
-        <Text style={styles.intro}>Before we collect your PhilHealth and health-profile information, please review how Alalay uses it.</Text>
+        <Text style={styles.intro}>Before we collect your identity, PhilHealth, and health-profile information, please review how Alalay uses it.</Text>
 
         <View style={styles.card}>
           <View style={styles.row}>
             <LockKeyhole color="#2B6CB0" size={22} />
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>What we collect</Text>
-              <Text style={styles.rowBody}>Identity and PhilHealth details from your MDR, plus the health-profile information you choose to provide.</Text>
+              <Text style={styles.rowBody}>
+                {isEgov
+                  ? 'The eGov PH identity and available PhilHealth fields you just approved, plus health-profile information you choose to provide.'
+                  : 'Identity and PhilHealth details you enter or import from an MDR, plus health-profile information you choose to provide.'}
+              </Text>
             </View>
           </View>
           <View style={styles.row}>

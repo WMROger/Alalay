@@ -89,7 +89,13 @@ const ELENA_IDENTITY = {
   memberCategory: 'Formal Economy',
 };
 
-const createSeededBen = (source: 'egov' | 'demo'): Beneficiary => ({
+const ELENA_EMERGENCY_CONTACT = {
+  name: 'Marco Cruz',
+  relationship: 'Brother',
+  phone: '0917 555 0199',
+};
+
+const createSeededBen = (source: 'egov' | 'mdr' | 'demo'): Beneficiary => ({
   id: 'beneficiary-ben-cruz',
   firstName: 'Ben',
   lastName: 'Cruz',
@@ -98,12 +104,12 @@ const createSeededBen = (source: 'egov' | 'demo'): Beneficiary => ({
   sex: 'Male',
   contactNumber: '0917 123 4567',
   pin: '12-987654321-0',
-  specialId: 'SC-CEB-680214',
+  specialId: '',
   knownAllergies: [],
-  currentMedications: source === 'demo' ? ['Amlodipine 5 mg'] : [],
-  chronicConditions: source === 'demo' ? ['Hypertension'] : [],
-  emergencyContact: { name: 'Elena Cruz', relationship: 'Daughter', phone: '0917 555 0142' },
-  prescriptionPhotoUrl: source === 'demo' ? 'seeded-demo-prescription' : '',
+  currentMedications: source === 'demo' || source === 'egov' ? ['Amlodipine 5 mg'] : [],
+  chronicConditions: source === 'demo' || source === 'egov' ? ['Hypertension'] : [],
+  emergencyContact: { name: 'Marco Cruz', relationship: 'Son', phone: '0917 555 0199' },
+  prescriptionPhotoUrl: source === 'demo' || source === 'egov' ? 'seeded-demo-prescription' : '',
   verificationStatus: source === 'egov' ? 'verified' : 'pending_confirmation',
   profileSource: source,
 });
@@ -187,10 +193,11 @@ export default function OnboardingScreen() {
   const addBeneficiary = useStore((state) => state.addBeneficiary);
   const updateBeneficiary = useStore((state) => state.updateBeneficiary);
   const setHasOnboarded = useStore((state) => state.setHasOnboarded);
+  const addPendingAction = useStore((state) => state.addPendingAction);
   const isEditing = params.edit === '1';
   const enteredWithEgov = params.source === 'egov' && !isEditing;
 
-  const [step, setStep] = useState(isEditing || enteredWithEgov ? 2 : 1);
+  const [step, setStep] = useState(isEditing ? 2 : 1);
   const [identitySource, setIdentitySource] = useState<IdentitySource>(enteredWithEgov ? 'egov' : masterProfile.identitySource || '');
   const [importingSource, setImportingSource] = useState<IdentitySource>('');
   const [mdrImageUri, setMdrImageUri] = useState('');
@@ -213,9 +220,9 @@ export default function OnboardingScreen() {
   const [allergies, setAllergies] = useState(masterProfile.knownAllergies.join(', '));
   const [medications, setMedications] = useState(masterProfile.currentMedications.join(', '));
   const [chronicConditions, setChronicConditions] = useState(masterProfile.chronicConditions.join(', '));
-  const [emergencyName, setEmergencyName] = useState(masterProfile.emergencyContact.name);
-  const [emergencyRelationship, setEmergencyRelationship] = useState(masterProfile.emergencyContact.relationship);
-  const [emergencyPhone, setEmergencyPhone] = useState(masterProfile.emergencyContact.phone);
+  const [emergencyName, setEmergencyName] = useState(enteredWithEgov ? ELENA_EMERGENCY_CONTACT.name : masterProfile.emergencyContact.name);
+  const [emergencyRelationship, setEmergencyRelationship] = useState(enteredWithEgov ? ELENA_EMERGENCY_CONTACT.relationship : masterProfile.emergencyContact.relationship);
+  const [emergencyPhone, setEmergencyPhone] = useState(enteredWithEgov ? ELENA_EMERGENCY_CONTACT.phone : masterProfile.emergencyContact.phone);
   const [hmoName, setHmoName] = useState(masterProfile.hmoName);
   const [hmoPolicyNumber, setHmoPolicyNumber] = useState(masterProfile.hmoPolicyNumber);
   const [secondaryIdUri, setSecondaryIdUri] = useState(masterProfile.secondaryIdPhotoUrl);
@@ -257,10 +264,11 @@ export default function OnboardingScreen() {
     setMemberCategory(ELENA_IDENTITY.memberCategory);
   };
 
-  const useDemoProfile = () => {
+  const uploadPreparedMdr = () => {
     setImportingSource('demo');
     setTimeout(() => {
-      applyElenaIdentity('demo');
+      applyElenaIdentity('mdr');
+      setMdrImageUri('seeded-demo-mdr');
       setBloodType('O+');
       setAllergies('Penicillin');
       setMedications('');
@@ -276,6 +284,27 @@ export default function OnboardingScreen() {
     }, 450);
   };
 
+  const useBenDemoDetails = () => {
+    setBeneficiaryForm((current) => ({
+      ...current,
+      firstName: current.firstName || 'Ben',
+      lastName: current.lastName || 'Cruz',
+      relationship: current.relationship || 'Father',
+      dateOfBirth: current.dateOfBirth || '03/09/1958',
+      sex: current.sex || 'Male',
+      contactNumber: current.contactNumber || '0917 123 4567',
+      pin: current.pin || '12-987654321-0',
+      specialId: '',
+      knownAllergies: current.knownAllergies || 'None known',
+      currentMedications: 'Amlodipine 5 mg',
+      chronicConditions: 'Hypertension',
+      emergencyName: 'Marco Cruz',
+      emergencyRelationship: 'Son',
+      emergencyPhone: '0917 555 0199',
+      prescriptionPhotoUrl: 'seeded-demo-prescription',
+    }));
+  };
+
   const handleMDRUpload = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -288,6 +317,7 @@ export default function OnboardingScreen() {
     setImportingSource('mdr');
     setTimeout(() => {
       applyElenaIdentity('mdr');
+      setOnboardingBeneficiaries([createSeededBen('mdr')]);
       setImportingSource('');
       setStep(2);
     }, 700);
@@ -412,6 +442,19 @@ export default function OnboardingScreen() {
       } else {
         addBeneficiary(beneficiary);
       }
+
+      if (beneficiary.verificationStatus === 'pending_confirmation') {
+        addPendingAction({
+          id: `dependent-confirmation-${beneficiary.id}`,
+          patientId: beneficiary.id,
+          kind: 'dependent_confirmation',
+          title: `Confirm ${beneficiary.firstName}’s linked profile`,
+          description: 'This dependent was added using family-provided details and is waiting for confirmation through their own mobile number.',
+          status: 'open',
+          route: '/family',
+          createdAt: new Date().toISOString(),
+        });
+      }
     });
 
     setHasOnboarded(true);
@@ -420,7 +463,7 @@ export default function OnboardingScreen() {
 
   const nextStep = () => setStep((current) => Math.min(TOTAL_STEPS, current + 1));
   const previousStep = () => {
-    if (enteredWithEgov && step === 2) {
+    if (enteredWithEgov && step === 1) {
       router.replace('/login');
       return;
     }
@@ -469,7 +512,7 @@ export default function OnboardingScreen() {
           <View style={styles.headerArea}>
             <Text style={styles.eyebrow}>{isEditing ? 'UPDATE YOUR DETAILS' : 'ALALAY PROFILE SETUP'}</Text>
             <Text style={styles.heroTitle}>
-              {step === 1 && 'Start with information you already have.'}
+              {step === 1 && (enteredWithEgov ? 'Your verified account is connected.' : 'Start with information you already have.')}
               {step === 2 && 'Review your identity and PhilHealth details.'}
               {step === 3 && 'Choose the updates that are useful to you.'}
               {step === 4 && 'Add the health information hospitals usually ask for.'}
@@ -480,35 +523,57 @@ export default function OnboardingScreen() {
             </Text>
             <Text style={styles.heroSub}>
               {step === 1
-                ? 'Import your MDR or enter the information manually. You can review every field before saving.'
+                ? enteredWithEgov
+                  ? 'Review all eight setup steps before anything is saved or shared.'
+                  : 'Import your MDR or enter the information manually. You can review every field before saving.'
                 : 'You can return and update this information whenever something changes.'}
             </Text>
           </View>
 
           {step === 1 && (
             <View style={styles.entryStack}>
-              <TouchableOpacity style={styles.egovCard} onPress={handleMDRUpload} disabled={Boolean(importingSource)} accessibilityRole="button">
+              {enteredWithEgov ? (
+                <>
+                  <View style={styles.egovConnectedCard}>
+                    <View style={styles.egovConnectedIcon}><ShieldCheck color="#FFFFFF" size={27} /></View>
+                    <View style={styles.entryCopy}>
+                      <Text style={styles.egovTitle}>eGov PH identity connected</Text>
+                      <Text style={styles.egovText}>Identity, contact and available PhilHealth information are ready for your review.</Text>
+                    </View>
+                    <CheckCircle2 color="#8FE0CD" size={24} />
+                  </View>
+                  <View style={styles.sourcePreviewCard}>
+                    <Text style={styles.sourcePreviewLabel}>INFORMATION RECEIVED</Text>
+                    <Text style={styles.sourcePreviewName}>Elena Cruz</Text>
+                    <Text style={styles.sourcePreviewText}>Cebu City · PhilHealth record found · 1 listed dependent</Text>
+                  </View>
+                </>
+              ) : (
+                <>
+              <TouchableOpacity style={styles.egovCard} onPress={uploadPreparedMdr} disabled={Boolean(importingSource)} accessibilityRole="button">
                 <View style={styles.entryIcon}><UploadCloud color="#FFFFFF" size={25} /></View>
                 <View style={styles.entryCopy}>
-                  <Text style={styles.egovTitle}>Upload or photograph an MDR</Text>
-                  <Text style={styles.egovText}>Alalay will prefill your PhilHealth details, then ask you to check them.</Text>
+                  <Text style={styles.egovTitle}>Upload PhilHealth MDR</Text>
+                  <Text style={styles.egovText}>Import identity and dependent information from your Member Data Record.</Text>
                 </View>
-                {importingSource === 'mdr' ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.entryArrow}>›</Text>}
+                {importingSource === 'demo' ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.entryArrow}>›</Text>}
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.optionCard} onPress={continueManually} disabled={Boolean(importingSource)} accessibilityRole="button">
-                <View style={[styles.entryIcon, styles.entryIconSoft]}><Smartphone color={COLORS.primary} size={24} /></View>
+              <TouchableOpacity style={styles.optionCard} onPress={handleMDRUpload} disabled={Boolean(importingSource)} accessibilityRole="button">
+                <View style={[styles.entryIcon, styles.entryIconSoft]}><FileText color={COLORS.blue} size={24} /></View>
                 <View style={styles.entryCopy}>
-                  <Text style={styles.optionTitle}>Enter details manually</Text>
-                  <Text style={styles.optionText}>No MDR copy is required. The PIN guide will help you find the right number.</Text>
+                  <Text style={styles.optionTitle}>Choose another MDR photo</Text>
+                  <Text style={styles.optionText}>Use the photo picker if you have a different MDR available.</Text>
                 </View>
-                <Text style={[styles.entryArrow, styles.entryArrowDark]}>›</Text>
+                {importingSource === 'mdr' ? <ActivityIndicator color={COLORS.blue} /> : <Text style={[styles.entryArrow, styles.entryArrowDark]}>›</Text>}
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.demoButton} onPress={useDemoProfile} disabled={Boolean(importingSource)} accessibilityRole="button">
-                {importingSource === 'demo' ? <ActivityIndicator color={COLORS.primary} /> : <UserPlus color={COLORS.primary} size={20} />}
-                <Text style={styles.demoButtonText}>Use Elena & Ben demo profile</Text>
+              <TouchableOpacity style={styles.demoButton} onPress={continueManually} disabled={Boolean(importingSource)} accessibilityRole="button">
+                <Smartphone color={COLORS.primary} size={20} />
+                <Text style={styles.demoButtonText}>Enter details manually instead</Text>
               </TouchableOpacity>
+                </>
+              )}
 
               <View style={styles.privacyNotice}>
                 <ShieldCheck color={COLORS.primary} size={20} />
@@ -530,7 +595,7 @@ export default function OnboardingScreen() {
               {!!mdrImageUri && (
                 <View style={styles.attachmentRow}>
                   <FileText color={COLORS.blue} size={20} />
-                  <Text style={styles.attachmentText}>MDR image attached and processed</Text>
+                  <Text style={styles.attachmentText}>{mdrImageUri === 'seeded-demo-mdr' ? 'Sample MDR uploaded and processed' : 'MDR image uploaded and processed'}</Text>
                 </View>
               )}
 
@@ -595,7 +660,7 @@ export default function OnboardingScreen() {
 
               <Text style={styles.preferenceSectionTitle}>Choose categories</Text>
               {[
-                ['seniorWellness', 'Senior wellness', 'Checkups and age-relevant health programs'],
+                ['seniorWellness', 'Senior & caregiver wellness', 'Checkups and age-relevant programs for linked family profiles such as Ben'],
                 ['philhealthPrograms', 'PhilHealth programs', 'Eligibility and coverage reminders'],
                 ['vaccinations', 'Vaccination', 'Optional vaccination announcements'],
                 ['localHealthServices', 'Local health services', 'Partner and local-service announcements'],
@@ -654,6 +719,16 @@ export default function OnboardingScreen() {
               <Text style={styles.cardTitle}>Emergency contact</Text>
               <Text style={styles.cardSub}>This is the only required health-profile section because it is immediately useful during an urgent visit.</Text>
 
+              {enteredWithEgov && (
+                <View style={styles.sourceBanner}>
+                  <CheckCircle2 color={COLORS.primary} size={20} />
+                  <View style={styles.sourceCopy}>
+                    <Text style={styles.sourceTitle}>Saved emergency contact loaded</Text>
+                    <Text style={styles.sourceText}>This is Elena’s editable Alalay contact. It is saved in her profile and is not claimed to come from eGov PH.</Text>
+                  </View>
+                </View>
+              )}
+
               <View style={styles.inputGroup}>
                 <RequiredLabel text="Contact name" />
                 <TextInput style={styles.input} value={emergencyName} onChangeText={setEmergencyName} placeholder="Marco Cruz" />
@@ -703,7 +778,7 @@ export default function OnboardingScreen() {
                     </View>
                     <View style={styles.beneficiaryMetaRow}>
                       <Text style={styles.beneficiaryMeta}>{beneficiary.contactNumber || 'Mobile needed'}</Text>
-                      <Text style={styles.beneficiaryMeta}>{beneficiary.prescriptionPhotoUrl ? 'Prescription attached' : 'No prescription attached'}</Text>
+                      <Text style={styles.beneficiaryMeta}>{beneficiary.prescriptionPhotoUrl === 'seeded-demo-prescription' ? 'Sample prescription' : beneficiary.prescriptionPhotoUrl ? 'Prescription attached' : 'No prescription attached'}</Text>
                     </View>
                   </View>
                 );
@@ -715,6 +790,12 @@ export default function OnboardingScreen() {
                     <Text style={styles.formTitle}>{editingBeneficiaryId ? 'Complete dependent profile' : 'Add a dependent'}</Text>
                     <TouchableOpacity onPress={() => setIsAddingBeneficiary(false)} accessibilityLabel="Close dependent form"><X color={COLORS.muted} size={20} /></TouchableOpacity>
                   </View>
+
+                  <TouchableOpacity style={styles.demoButton} onPress={useBenDemoDetails} accessibilityRole="button">
+                    <UserPlus color={COLORS.primary} size={19} />
+                    <Text style={styles.demoButtonText}>Restore Ben’s sample details</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.demoHelper}>Prepared profile information for the sample MDR. You can still edit every field.</Text>
 
                   <Text style={styles.formSectionTitle}>Identity</Text>
                   <TextInput style={styles.input} value={beneficiaryForm.firstName} onChangeText={(firstName) => setBeneficiaryForm((current) => ({ ...current, firstName }))} placeholder="First name *" />
@@ -744,8 +825,8 @@ export default function OnboardingScreen() {
                   >
                     <UploadCloud color={COLORS.blue} size={21} />
                     <View style={styles.compactUploadCopy}>
-                      <Text style={styles.compactUploadTitle}>{beneficiaryForm.prescriptionPhotoUrl ? 'Prescription attached' : 'Upload current prescription'}</Text>
-                      <Text style={styles.compactUploadText}>Optional photo of maintenance medicines</Text>
+                      <Text style={styles.compactUploadTitle}>{beneficiaryForm.prescriptionPhotoUrl === 'seeded-demo-prescription' ? 'Sample prescription attached' : beneficiaryForm.prescriptionPhotoUrl ? 'Prescription attached' : 'Choose a prescription photo'}</Text>
+                      <Text style={styles.compactUploadText}>{beneficiaryForm.prescriptionPhotoUrl === 'seeded-demo-prescription' ? 'Prepared sample · Tap to replace with another photo' : 'Photo of a current prescription or medicine list'}</Text>
                     </View>
                     {beneficiaryForm.prescriptionPhotoUrl && <CheckCircle2 color={COLORS.primary} size={20} />}
                   </TouchableOpacity>
@@ -866,7 +947,7 @@ export default function OnboardingScreen() {
           )}
         </ScrollView>
 
-        {step > 1 && !isAddingBeneficiary && (
+        {(step > 1 || enteredWithEgov) && !isAddingBeneficiary && (
           <View style={styles.bottomBar}>
             <TouchableOpacity
               style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
@@ -941,6 +1022,12 @@ const styles = StyleSheet.create({
   heroSub: { maxWidth: 650, fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 20, color: COLORS.muted, marginTop: 7 },
   entryStack: { gap: 12 },
   egovCard: { minHeight: 104, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.navy, borderRadius: 22, padding: 18 },
+  egovConnectedCard: { minHeight: 112, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.navy, borderRadius: 22, padding: 18 },
+  egovConnectedIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  sourcePreviewCard: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.line, borderRadius: 18, padding: 16 },
+  sourcePreviewLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 1.2, color: COLORS.primary },
+  sourcePreviewName: { fontFamily: 'Sora_600SemiBold', fontSize: 16, color: COLORS.ink, marginTop: 6 },
+  sourcePreviewText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: COLORS.muted, marginTop: 3 },
   entryIcon: { width: 49, height: 49, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   entryIconSoft: { backgroundColor: COLORS.blueSoft },
   entryCopy: { flex: 1 },
@@ -953,6 +1040,7 @@ const styles = StyleSheet.create({
   optionText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: COLORS.muted, marginTop: 4 },
   demoButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: COLORS.primarySoft, borderWidth: 1, borderColor: '#BFE4DB', borderRadius: 16 },
   demoButtonText: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: COLORS.primary },
+  demoHelper: { fontFamily: 'Inter_400Regular', fontSize: 9, lineHeight: 14, color: COLORS.muted, textAlign: 'center', marginTop: -5, marginBottom: 15 },
   privacyNotice: { flexDirection: 'row', gap: 10, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, marginTop: 3 },
   privacyNoticeText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: COLORS.muted },
   card: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.line, borderRadius: 23, padding: 20 },

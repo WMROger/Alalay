@@ -29,16 +29,30 @@ export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [mobileError, setMobileError] = useState('');
+
+  const normalizedMobileNumber = mobileNumber.replace(/[\s-]/g, '');
+  const isValidPhilippineMobile = /^09\d{9}$/.test(normalizedMobileNumber) || /^\+639\d{9}$/.test(normalizedMobileNumber);
 
   const continueWithEgov = () => {
-    router.replace('/privacy?source=egov');
+    router.push('/egov-connect');
   };
 
   const continueWithMobile = () => {
     if (!otpSent) {
+      if (!isValidPhilippineMobile) {
+        setMobileError('Enter an 11-digit Philippine mobile number, such as 0917 123 4567.');
+        return;
+      }
+      setMobileError('');
       setOtpSent(true);
       return;
     }
+    if (otp !== '123456') {
+      setMobileError('That code does not match. For this demo, use 123456.');
+      return;
+    }
+    setMobileError('');
     router.replace('/privacy?source=mobile');
   };
 
@@ -46,6 +60,7 @@ export default function LoginScreen() {
     setMobileFlowOpen(false);
     setOtpSent(false);
     setOtp('');
+    setMobileError('');
   };
 
   return (
@@ -108,7 +123,7 @@ export default function LoginScreen() {
                 placeholder="09XX XXX XXXX"
                 placeholderTextColor="#8EA19C"
                 value={mobileNumber}
-                onChangeText={setMobileNumber}
+                onChangeText={(value) => { setMobileNumber(value); setMobileError(''); }}
                 keyboardType="phone-pad"
                 editable={!otpSent}
                 accessibilityLabel="Mobile number"
@@ -125,19 +140,23 @@ export default function LoginScreen() {
                     placeholder="000000"
                     placeholderTextColor="#8EA19C"
                     value={otp}
-                    onChangeText={setOtp}
+                    onChangeText={(value) => { setOtp(value.replace(/\D/g, '')); setMobileError(''); }}
                     keyboardType="number-pad"
                     maxLength={6}
                     accessibilityLabel="Six-digit one-time code"
                   />
-                  <Text style={styles.demoText}>Demo mode: enter any six digits.</Text>
+                  <TouchableOpacity onPress={() => { setOtp('123456'); setMobileError(''); }} accessibilityRole="button">
+                    <Text style={styles.demoText}>Prototype verification code: 123456 · Tap to fill</Text>
+                  </TouchableOpacity>
                 </>
               )}
 
+              {!!mobileError && <Text style={styles.errorText}>{mobileError}</Text>}
+
               <TouchableOpacity
-                style={[styles.continueButton, (!mobileNumber || (otpSent && otp.length !== 6)) && styles.buttonDisabled]}
+                style={[styles.continueButton, ((!otpSent && !isValidPhilippineMobile) || (otpSent && otp.length !== 6)) && styles.buttonDisabled]}
                 onPress={continueWithMobile}
-                disabled={!mobileNumber || (otpSent && otp.length !== 6)}
+                disabled={(!otpSent && !mobileNumber) || (otpSent && otp.length !== 6)}
                 accessibilityRole="button"
               >
                 <Text style={styles.continueButtonText}>{otpSent ? 'Verify & Continue' : 'Send one-time code'}</Text>
@@ -192,6 +211,7 @@ const styles = StyleSheet.create({
   sentCard: { backgroundColor: COLORS.primarySoft, borderRadius: 12, padding: 11, marginBottom: 15 },
   sentText: { fontFamily: 'Inter_500Medium', fontSize: 11, lineHeight: 17, color: COLORS.primary },
   demoText: { fontFamily: 'Inter_400Regular', fontSize: 10, color: COLORS.muted, marginTop: -7, marginBottom: 13 },
+  errorText: { fontFamily: 'Inter_500Medium', fontSize: 11, lineHeight: 17, color: '#B42318', backgroundColor: '#FFF3F1', borderRadius: 10, padding: 10, marginBottom: 12 },
   continueButton: { minHeight: 53, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary, borderRadius: 15 },
   buttonDisabled: { opacity: 0.42 },
   continueButtonText: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#FFFFFF' },

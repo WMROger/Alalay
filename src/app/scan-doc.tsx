@@ -1,20 +1,32 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { FlaskConical, ReceiptText, Sparkles, X } from 'lucide-react-native';
+import { AlertTriangle, FlaskConical, ReceiptText, RotateCcw, Sparkles, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 type DocumentType = 'bill' | 'lab';
 
 export default function ScanDocScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ type?: string }>();
+  const params = useLocalSearchParams<{ type?: string; state?: string }>();
+  const { height, width } = useWindowDimensions();
   const documentType: DocumentType = params.type === 'bill' ? 'bill' : 'lab';
   const [status, setStatus] = useState('Position the full document inside the frame');
+  const [scanState, setScanState] = useState<'scanning' | 'error'>(params.state === 'error' ? 'error' : 'scanning');
+  const [retryKey, setRetryKey] = useState(0);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const isBill = documentType === 'bill';
   const targetRoute = isBill ? '/bill' : '/document';
+  const isCompact = height < 720 || width < 370;
 
   useEffect(() => {
+    if (scanState === 'error') {
+      scanLineAnim.stopAnimation();
+      setStatus('We could not read this document clearly.');
+      return;
+    }
+
+    setStatus('Position the full document inside the frame');
+    scanLineAnim.setValue(0);
     const scanAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(scanLineAnim, {
@@ -48,7 +60,12 @@ export default function ScanDocScreen() {
       clearTimeout(groundingTimer);
       clearTimeout(resultTimer);
     };
-  }, [isBill, router, scanLineAnim, targetRoute]);
+  }, [isBill, retryKey, router, scanLineAnim, scanState, targetRoute]);
+
+  const retryScan = () => {
+    setScanState('scanning');
+    setRetryKey((value) => value + 1);
+  };
 
   const translateY = scanLineAnim.interpolate({
     inputRange: [0, 1],
@@ -70,10 +87,14 @@ export default function ScanDocScreen() {
           <Text style={styles.eyebrow}>ALALAY DOCUMENT ASSISTANT</Text>
           <Text style={styles.title}>{isBill ? 'Scan hospital bill' : 'Scan lab result'}</Text>
         </View>
-        <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>DEMO</Text></View>
+        <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>SAMPLE DOCUMENT</Text></View>
       </View>
 
-      <View style={styles.body}>
+      <ScrollView
+        style={styles.bodyScroll}
+        contentContainerStyle={[styles.body, isCompact && styles.bodyCompact]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.contextCard}>
           <View style={[styles.contextIcon, { backgroundColor: isBill ? '#4B391F' : '#173B55' }]}>
             {isBill ? <ReceiptText color="#F4C46C" size={23} /> : <FlaskConical color="#8BC8F5" size={23} />}
@@ -88,7 +109,7 @@ export default function ScanDocScreen() {
           </View>
         </View>
 
-        <View style={styles.viewfinder}>
+        <View style={[styles.viewfinder, isCompact && styles.viewfinderCompact, scanState === 'error' && styles.viewfinderError]}>
           <View style={[styles.corner, styles.topLeft]} />
           <View style={[styles.corner, styles.topRight]} />
           <View style={[styles.corner, styles.bottomLeft]} />
@@ -105,26 +126,52 @@ export default function ScanDocScreen() {
             <View style={[styles.documentLine, { width: '78%' }]} />
           </View>
 
-          <Animated.View style={[styles.scanLine, { transform: [{ translateY }] }]} />
+          {scanState === 'scanning' ? (
+            <Animated.View style={[styles.scanLine, { transform: [{ translateY }] }]} />
+          ) : (
+            <View style={styles.errorOverlay}>
+              <View style={styles.errorIcon}><AlertTriangle color="#F6B86B" size={27} /></View>
+              <Text style={styles.errorTitle}>Document unreadable</Text>
+              <Text style={styles.errorDescription}>Move to brighter light, flatten the page, and keep all four corners inside the frame.</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.statusCard}>
-          <View style={styles.processingIcon}><Sparkles color="#7DE0CB" size={18} /></View>
+        <View style={[styles.statusCard, scanState === 'error' && styles.statusCardError]}>
+          <View style={[styles.processingIcon, scanState === 'error' && styles.processingIconError]}>
+            {scanState === 'error' ? <AlertTriangle color="#F6B86B" size={18} /> : <Sparkles color="#7DE0CB" size={18} />}
+          </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.statusLabel}>PROCESSING</Text>
+            <Text style={[styles.statusLabel, scanState === 'error' && styles.statusLabelError]}>{scanState === 'error' ? 'NEEDS ANOTHER PHOTO' : 'PROCESSING'}</Text>
             <Text style={styles.statusText}>{status}</Text>
           </View>
         </View>
+
+        {scanState === 'error' && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            style={styles.retryButton}
+            onPress={retryScan}
+          >
+            <RotateCcw color="#FFFFFF" size={18} />
+            <Text style={styles.retryButtonText}>Try scanning again</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.demoButton}
           onPress={() => router.replace(targetRoute)}
         >
-          <Text style={styles.demoButtonText}>Use Seeded Demo Document</Text>
+          <Text style={styles.demoButtonText}>{scanState === 'error' ? 'Use Sample Document Instead' : 'Use Sample Document'}</Text>
         </TouchableOpacity>
-        <Text style={styles.helperText}>For the pitch, this uses the hospital's prepared sample document.</Text>
-      </View>
+        {scanState === 'scanning' && (
+          <TouchableOpacity onPress={() => setScanState('error')} accessibilityRole="button">
+            <Text style={styles.recoveryLink}>Document not detected?</Text>
+          </TouchableOpacity>
+        )}
+        <Text style={styles.helperText}>Prepared sample for demonstrating the document-explanation flow.</Text>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -138,12 +185,16 @@ const styles = StyleSheet.create({
   title: { fontFamily: 'Sora_600SemiBold', fontSize: 17, color: '#FFFFFF' },
   demoBadge: { backgroundColor: '#243640', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
   demoBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 0.8, color: '#B8C8CE' },
-  body: { flex: 1, width: '100%', maxWidth: 620, alignSelf: 'center', paddingHorizontal: 18, paddingBottom: 24 },
+  bodyScroll: { flex: 1 },
+  body: { flexGrow: 1, width: '100%', maxWidth: 620, alignSelf: 'center', paddingHorizontal: 18, paddingBottom: 24 },
+  bodyCompact: { paddingBottom: 16 },
   contextCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#14262F', borderWidth: 1, borderColor: '#243B46', borderRadius: 17, padding: 14, marginBottom: 15 },
   contextIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   contextTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#FFFFFF' },
   contextDescription: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 16, color: '#AFC1C8', marginTop: 3 },
-  viewfinder: { flex: 1, minHeight: 350, position: 'relative', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 24, backgroundColor: '#101F27' },
+  viewfinder: { height: 350, position: 'relative', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 24, backgroundColor: '#101F27' },
+  viewfinderCompact: { height: 260 },
+  viewfinderError: { borderWidth: 1, borderColor: '#6C4D31' },
   documentPreview: { width: '72%', height: '82%', maxWidth: 330, backgroundColor: '#EEF2F1', borderRadius: 10, padding: 28, justifyContent: 'center' },
   documentHeaderLine: { width: '48%', height: 10, borderRadius: 5, backgroundColor: '#8CA09B', marginBottom: 24 },
   documentLine: { width: '100%', height: 7, borderRadius: 4, backgroundColor: '#C7D2CF', marginBottom: 12 },
@@ -154,11 +205,21 @@ const styles = StyleSheet.create({
   bottomLeft: { bottom: 12, left: 12, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 14 },
   bottomRight: { bottom: 12, right: 12, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 14 },
   scanLine: { position: 'absolute', top: 18, left: 22, right: 22, height: 2, borderRadius: 2, backgroundColor: '#7DE0CB', shadowColor: '#7DE0CB', shadowOpacity: 0.8, shadowRadius: 10 },
+  errorOverlay: { position: 'absolute', left: 24, right: 24, alignItems: 'center', backgroundColor: 'rgba(11, 24, 32, 0.92)', borderWidth: 1, borderColor: '#60472F', borderRadius: 20, padding: 20 },
+  errorIcon: { width: 50, height: 50, borderRadius: 17, backgroundColor: '#3E3023', alignItems: 'center', justifyContent: 'center' },
+  errorTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 16, color: '#FFFFFF', marginTop: 12 },
+  errorDescription: { maxWidth: 330, fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: '#C8D4D7', textAlign: 'center', marginTop: 6 },
   statusCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#14262F', borderRadius: 16, padding: 13, marginTop: 14 },
+  statusCardError: { borderWidth: 1, borderColor: '#60472F' },
   processingIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: '#1B3B3B', alignItems: 'center', justifyContent: 'center' },
+  processingIconError: { backgroundColor: '#3E3023' },
   statusLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 1.1, color: '#7DE0CB' },
+  statusLabelError: { color: '#F6B86B' },
   statusText: { fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 17, color: '#E2EAEC', marginTop: 2 },
+  retryButton: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#B96B2F', borderRadius: 14, marginTop: 13 },
+  retryButtonText: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#FFFFFF' },
   demoButton: { minHeight: 50, backgroundColor: '#FFFFFF', borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 13 },
   demoButtonText: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#173B4A' },
+  recoveryLink: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: '#AFC1C8', textAlign: 'center', textDecorationLine: 'underline', paddingVertical: 11 },
   helperText: { fontFamily: 'Inter_400Regular', fontSize: 10, color: '#82969E', textAlign: 'center', marginTop: 9 },
 });

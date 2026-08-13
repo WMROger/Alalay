@@ -16,7 +16,7 @@ export interface Beneficiary {
   emergencyContact?: { name: string; relationship: string; phone: string };
   prescriptionPhotoUrl?: string;
   verificationStatus?: 'verified' | 'pending_confirmation' | 'needs_information';
-  profileSource?: 'egov' | 'manual' | 'demo';
+  profileSource?: 'egov' | 'mdr' | 'manual' | 'demo';
 }
 
 export interface NotificationPreferences {
@@ -42,6 +42,36 @@ export interface AdmissionStepState {
   location: string;
   guidance: string;
   updatedAt: string;
+}
+
+export interface VisitContactState {
+  name: string;
+  relationship: string;
+  phone: string;
+}
+
+export interface PendingActionState {
+  id: string;
+  patientId: string;
+  kind: 'missing_senior_id' | 'dependent_confirmation' | 'profile_detail';
+  title: string;
+  description: string;
+  status: 'open' | 'resolved' | 'dismissed';
+  route: string;
+  createdAt: string;
+}
+
+export interface HospitalSessionState {
+  isAuthenticated: boolean;
+  hospitalName: string;
+  facilityId: string;
+  philhealthAccreditation: string;
+  dohFacilityId: string;
+  staffName: string;
+  email: string;
+  role: string;
+  verificationStatus: 'verified' | 'pending_review';
+  accountMode: 'demo' | 'sign_in' | 'sign_up';
 }
 
 export const createInitialAdmissionSteps = (): AdmissionStepState[] => [
@@ -113,6 +143,24 @@ export interface VisitLogState {
   supportsLiveStatus: boolean;
   checkedInAt: string;
   admissionSteps: AdmissionStepState[];
+  patientId: string;
+  patientName: string;
+  patientRelationship: string;
+  patientDateOfBirth: string;
+  patientSex: string;
+  patientPin: string;
+  patientContactNumber: string;
+  patientAllergies: string[];
+  patientMedications: string[];
+  patientConditions: string[];
+  patientPrescriptionPhotoUrl: string;
+  savedEmergencyContact: VisitContactState;
+  visitEmergencyContact: VisitContactState | null;
+  seniorIdAvailable: boolean | null;
+  consentAcknowledgedAt: string;
+  consentAcknowledgedBy: string;
+  generatedDocuments: string[];
+  documentsGeneratedAt: string;
 }
 
 interface AdmissionStore {
@@ -124,10 +172,18 @@ interface AdmissionStore {
   masterProfile: MasterProfileState;
   visitLog: VisitLogState;
   beneficiaries: Beneficiary[];
+  activePatientId: string;
+  pendingActions: PendingActionState[];
+  hospitalSession: HospitalSessionState;
   
   // Actions
   updateMasterProfile: (data: Partial<MasterProfileState>) => void;
   updateVisitLog: (data: Partial<VisitLogState>) => void;
+  setActivePatient: (id: string) => void;
+  addPendingAction: (action: PendingActionState) => void;
+  updatePendingAction: (id: string, status: PendingActionState['status']) => void;
+  setHospitalSession: (session: HospitalSessionState) => void;
+  logoutHospital: () => void;
   updateAdmissionStep: (id: AdmissionStepId, status: AdmissionStepStatus) => void;
   addBeneficiary: (b: Beneficiary) => void;
   updateBeneficiary: (id: string, data: Partial<Beneficiary>) => void;
@@ -154,7 +210,27 @@ const initialMasterProfile: MasterProfileState = {
 const initialVisitLog: VisitLogState = {
   hospitalName: '', deskName: '', modeOfAdmission: 'ER', visitNote: '',
   matchCode: '', status: 'pending', dataSharingConsent: false,
-  supportsLiveStatus: false, checkedInAt: '', admissionSteps: []
+  supportsLiveStatus: false, checkedInAt: '', admissionSteps: [],
+  patientId: '', patientName: '', patientRelationship: '', patientDateOfBirth: '',
+  patientSex: '', patientPin: '', patientContactNumber: '', patientAllergies: [],
+  patientMedications: [], patientConditions: [], patientPrescriptionPhotoUrl: '',
+  savedEmergencyContact: { name: '', relationship: '', phone: '' },
+  visitEmergencyContact: null, seniorIdAvailable: null,
+  consentAcknowledgedAt: '', consentAcknowledgedBy: '',
+  generatedDocuments: [], documentsGeneratedAt: '',
+};
+
+const initialHospitalSession: HospitalSessionState = {
+  isAuthenticated: false,
+  hospitalName: '',
+  facilityId: '',
+  philhealthAccreditation: '',
+  dohFacilityId: '',
+  staffName: '',
+  email: '',
+  role: '',
+  verificationStatus: 'pending_review',
+  accountMode: 'sign_in',
 };
 
 // 2. Create Store
@@ -165,6 +241,9 @@ export const useStore = create<AdmissionStore>((set) => ({
   masterProfile: initialMasterProfile,
   visitLog: initialVisitLog,
   beneficiaries: [],
+  activePatientId: 'self',
+  pendingActions: [],
+  hospitalSession: initialHospitalSession,
   
   updateMasterProfile: (data) => set((state) => ({
     masterProfile: { ...state.masterProfile, ...data }
@@ -173,6 +252,22 @@ export const useStore = create<AdmissionStore>((set) => ({
   updateVisitLog: (data) => set((state) => ({
     visitLog: { ...state.visitLog, ...data }
   })),
+
+  setActivePatient: (id) => set({ activePatientId: id }),
+
+  addPendingAction: (action) => set((state) => ({
+    pendingActions: state.pendingActions.some((item) => item.id === action.id)
+      ? state.pendingActions.map((item) => item.id === action.id ? action : item)
+      : [...state.pendingActions, action],
+  })),
+
+  updatePendingAction: (id, status) => set((state) => ({
+    pendingActions: state.pendingActions.map((item) => item.id === id ? { ...item, status } : item),
+  })),
+
+  setHospitalSession: (hospitalSession) => set({ hospitalSession }),
+
+  logoutHospital: () => set({ hospitalSession: initialHospitalSession }),
 
   updateAdmissionStep: (id, status) => set((state) => {
     const admissionSteps = state.visitLog.admissionSteps.map((step) => (
@@ -209,6 +304,8 @@ export const useStore = create<AdmissionStore>((set) => ({
     hasOnboarded: false,
     masterProfile: initialMasterProfile, 
     visitLog: initialVisitLog,
-    beneficiaries: []
+    beneficiaries: [],
+    activePatientId: 'self',
+    pendingActions: [],
   })
 }));

@@ -10,9 +10,10 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Maximize2, Receipt, Lightbulb, MessageCircle, Send, X } from 'lucide-react-native';
+import { ChevronLeft, Receipt, Lightbulb, MessageCircle, RotateCcw, Send, ShieldCheck, X } from 'lucide-react-native';
 
 type BillingMessage = {
   id: string;
@@ -74,6 +75,8 @@ function getBillingAnswer(question: string) {
 
 export default function BillReaderScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 760;
   const [isQuestionOpen, setIsQuestionOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<BillingMessage[]>(initialMessages);
@@ -97,38 +100,41 @@ export default function BillReaderScreen() {
       {/* Offline-safe branded header */}
       <View style={styles.imageHeader}>
         <SafeAreaView>
-          <View style={styles.topBar}>
-            <TouchableOpacity style={styles.glassBtn} onPress={() => router.back()}>
+          <View style={[styles.topBar, isWide && styles.pageWidth]}>
+            <TouchableOpacity style={styles.glassBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back">
               <ChevronLeft color="#FFFFFF" size={24} />
             </TouchableOpacity>
             <View style={styles.glassPill}>
               <Text style={styles.glassText}>Original Bill</Text>
             </View>
-            <TouchableOpacity style={styles.glassBtn}>
-              <Maximize2 color="#FFFFFF" size={20} />
-            </TouchableOpacity>
+            <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>SAMPLE DOCUMENT</Text></View>
           </View>
         </SafeAreaView>
-        <View style={styles.heroCopy}>
+        <View style={[styles.heroCopy, isWide && styles.pageWidth]}>
           <Text style={styles.heroEyebrow}>GROUNDED BILL EXPLANATION</Text>
           <Text style={styles.heroTitle}>Your hospital bill</Text>
-          <Text style={styles.heroSubtitle}>Explained using a seeded Cebu hospital billing glossary</Text>
+          <Text style={styles.heroSubtitle}>Explained using the sample hospital’s billing glossary</Text>
         </View>
       </View>
 
       {/* Main Content Sheet */}
-      <View style={styles.sheet}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <View style={[styles.sheet, isWide && styles.sheetWide]}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide]} showsVerticalScrollIndicator={false}>
           
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconBox}>
               <Receipt color="#FFFFFF" size={24} />
             </View>
-            <View>
-              <Text style={styles.title}>AI Bill Analysis</Text>
-              <Text style={styles.subtitle}>Cebu hospital demo bill • OCT 12</Text>
+            <View style={styles.headerCopy}>
+              <Text style={styles.title}>Bill Explainer</Text>
+              <Text style={styles.subtitle}>Cebu sample hospital bill • 4 totals read</Text>
             </View>
+          </View>
+
+          <View style={styles.sourceNotice}>
+            <ShieldCheck color="#137A67" size={19} />
+            <Text style={styles.sourceNoticeText}>Answers are limited to the amounts and labels shown on this sample bill. Confirm official charges with the hospital billing office.</Text>
           </View>
 
           {/* Metric 1 - Total */}
@@ -195,7 +201,7 @@ export default function BillReaderScreen() {
           <View style={styles.summaryCallout}>
             <View style={{flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12}}>
               <Lightbulb color="#FFFFFF" size={20} />
-              <Text style={styles.summaryTitle}>AI Summary</Text>
+              <Text style={styles.summaryTitle}>Plain-language summary</Text>
             </View>
             <Text style={styles.summaryText}>
               The displayed PhilHealth and HMO deductions cover about 72% of the total hospital bill. The remaining balance shown is ₱12,700.
@@ -208,6 +214,21 @@ export default function BillReaderScreen() {
             >
               <MessageCircle color="#FFFFFF" size={19} />
               <Text style={styles.saveBtnText}>Ask a Billing Question</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.recoveryCard}>
+            <View style={styles.recoveryCopy}>
+              <Text style={styles.recoveryTitle}>Amount missing or unreadable?</Text>
+              <Text style={styles.recoveryText}>Retake the entire bill in brighter light. The current explanation remains available until a clearer scan is processed.</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.rescanButton}
+              onPress={() => router.replace('/scan-doc?type=bill')}
+              accessibilityRole="button"
+            >
+              <RotateCcw color="#137A67" size={17} />
+              <Text style={styles.rescanButtonText}>Rescan</Text>
             </TouchableOpacity>
           </View>
           
@@ -233,7 +254,7 @@ export default function BillReaderScreen() {
             onPress={() => setIsQuestionOpen(false)}
             accessibilityLabel="Close billing questions"
           />
-          <View style={styles.questionSheet}>
+          <View style={[styles.questionSheet, isWide && styles.questionSheetWide]}>
             <View style={styles.sheetHandle} />
             <View style={styles.questionHeader}>
               <View style={styles.questionIcon}>
@@ -332,9 +353,12 @@ const styles = StyleSheet.create({
   
   imageHeader: { height: 280, width: '100%', backgroundColor: '#173B4A' },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16 },
+  pageWidth: { width: '100%', maxWidth: 960, alignSelf: 'center' },
   glassBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   glassPill: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   glassText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#FFFFFF' },
+  demoBadge: { backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7 },
+  demoBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 1, color: '#FFFFFF' },
   heroCopy: { paddingHorizontal: 28, marginTop: 30 },
   heroEyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 1.4, color: '#80D7C5', marginBottom: 7 },
   heroTitle: { fontFamily: 'Sora_700Bold', fontSize: 27, color: '#FFFFFF' },
@@ -348,12 +372,17 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10
   },
+  sheetWide: { width: '100%', maxWidth: 960, alignSelf: 'center' },
   scrollContent: { padding: 24, paddingBottom: 60 },
+  scrollContentWide: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingHorizontal: 34 },
 
   header: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 32 },
+  headerCopy: { flex: 1 },
   iconBox: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#38A169', alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: 'Sora_700Bold', fontSize: 22, color: '#1A202C', marginBottom: 4 },
   subtitle: { fontFamily: 'Inter_500Medium', fontSize: 13, color: '#718096' },
+  sourceNotice: { flexDirection: 'row', gap: 10, backgroundColor: '#ECF8F5', borderWidth: 1, borderColor: '#C8E6DF', borderRadius: 16, padding: 14, marginTop: -14, marginBottom: 20 },
+  sourceNoticeText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18, color: '#45645D' },
 
   metricCard: { 
     backgroundColor: '#FFFFFF', 
@@ -385,6 +414,13 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 9 },
   saveBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#FFFFFF' },
 
+  recoveryCard: { flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: '#F7FAF9', borderWidth: 1, borderColor: '#DCE7E3', borderRadius: 18, padding: 15, marginBottom: 18 },
+  recoveryCopy: { flex: 1 },
+  recoveryTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#1A202C' },
+  recoveryText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 16, color: '#718096', marginTop: 4 },
+  rescanButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#E6F5F1', borderRadius: 13, paddingHorizontal: 13 },
+  rescanButtonText: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: '#137A67' },
+
   disclaimerBanner: { backgroundColor: '#FFFAF0', borderTopWidth: 1, borderTopColor: '#FEEBC8', paddingHorizontal: 18, paddingVertical: 13 },
   disclaimer: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#975A16', textAlign: 'center', lineHeight: 18 },
 
@@ -404,6 +440,7 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 20,
   },
+  questionSheetWide: { width: '100%', maxWidth: 720, alignSelf: 'center', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
   sheetHandle: { alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: '#CEDBDD', marginTop: 10, marginBottom: 15 },
   questionHeader: { flexDirection: 'row', alignItems: 'center', paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E1EAEB' },
   questionIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#167D72', alignItems: 'center', justifyContent: 'center' },

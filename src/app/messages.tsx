@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowRight, FlaskConical, MessageCircle, ReceiptText, ShieldCheck } from 'lucide-react-native';
+import { ArrowRight, FlaskConical, MessageCircle, ReceiptText, ShieldCheck, Sparkles } from 'lucide-react-native';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppBottomNav } from '../components/AppBottomNav';
 
@@ -33,6 +33,22 @@ export default function MessagesScreen() {
           <Text style={styles.noticeText}>These are grounded document explanations—not messages from a doctor or hospital.</Text>
         </View>
 
+        <TouchableOpacity
+          style={styles.askCard}
+          onPress={() => router.push('/ask-alalay')}
+          activeOpacity={0.82}
+          accessibilityRole="button"
+          accessibilityLabel="Ask Alalay"
+        >
+          <View style={styles.askIcon}><Sparkles color="#FFFFFF" size={22} /></View>
+          <View style={styles.askCopy}>
+            <Text style={styles.askEyebrow}>GUIDED ROUTING</Text>
+            <Text style={styles.askTitle}>Ask Alalay</Text>
+            <Text style={styles.askText}>Ask a question and get routed to the right feature.</Text>
+          </View>
+          <ArrowRight color="#FFFFFF" size={19} />
+        </TouchableOpacity>
+
         <Text style={styles.sectionTitle}>Recent conversations</Text>
 
         <TouchableOpacity style={styles.threadCard} onPress={() => router.push('/bill')} activeOpacity={0.8}>
@@ -44,7 +60,7 @@ export default function MessagesScreen() {
               <Text style={styles.threadTitle}>Hospital bill</Text>
               <Text style={styles.threadTime}>Today</Text>
             </View>
-            <Text style={styles.threadMeta}>Seeded Cebu hospital bill</Text>
+            <Text style={styles.threadMeta}>Cebu sample hospital bill</Text>
             <Text style={styles.threadPreview} numberOfLines={2}>Ask about the ₱45,200 total, PhilHealth, HMO, or remaining balance.</Text>
           </View>
           <ArrowRight color={COLORS.muted} size={19} />
@@ -59,7 +75,7 @@ export default function MessagesScreen() {
               <Text style={styles.threadTitle}>CBC lab result</Text>
               <Text style={styles.threadTime}>Yesterday</Text>
             </View>
-            <Text style={styles.threadMeta}>Seeded demonstration result</Text>
+            <Text style={styles.threadMeta}>Cebu sample lab report</Text>
             <Text style={styles.threadPreview} numberOfLines={2}>Review which values are inside or outside the hospital-provided ranges.</Text>
           </View>
           <ArrowRight color={COLORS.muted} size={19} />
@@ -89,6 +105,12 @@ const styles = StyleSheet.create({
   subtitle: { maxWidth: 420, fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 20, color: COLORS.muted, marginTop: 5 },
   notice: { flexDirection: 'row', gap: 10, backgroundColor: COLORS.primarySoft, borderWidth: 1, borderColor: '#CBE9E2', borderRadius: 16, padding: 14, marginTop: 21, marginBottom: 27 },
   noticeText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18, color: COLORS.muted },
+  askCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.navy, borderRadius: 20, padding: 15, marginBottom: 25 },
+  askIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  askCopy: { flex: 1 },
+  askEyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 1.1, color: '#80D7C5' },
+  askTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 15, color: '#FFFFFF', marginTop: 2 },
+  askText: { fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 15, color: '#C9DADF', marginTop: 3 },
   sectionTitle: { fontFamily: 'Sora_700Bold', fontSize: 18, color: COLORS.ink, marginBottom: 12 },
   threadCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.line, borderRadius: 20, padding: 15, marginBottom: 11 },
   threadIcon: { width: 50, height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

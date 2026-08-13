@@ -1,30 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { Building2, FileCheck, CheckCircle2, QrCode, Lock } from 'lucide-react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { Building2, FileCheck, CheckCircle2, QrCode, Lock, ShieldCheck } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { useStore } from '../../store/useStore';
 
 export default function AdminIdentityScreen() {
+  const hospitalSession = useStore((state) => state.hospitalSession);
   const [isSaved, setIsSaved] = useState(false);
   const [facilityId, setFacilityId] = useState<string | null>(null);
   
   // Provisioned locked attributes from Alalay Super Admin
   const lockedAttributes = {
-    hospitalName: 'Vicente Sotto Memorial Medical Center (VSMMC)',
-    philHealthNumber: 'PAN-07-293-8472',
-    dohLicense: 'DOH-R7-10923-PUB',
-    facilityTin: '000-123-456-000'
+    hospitalName: hospitalSession.hospitalName,
+    philHealthNumber: hospitalSession.philhealthAccreditation,
+    dohLicense: hospitalSession.dohFacilityId,
   };
 
   const [form, setForm] = useState({
-    adminEmail: 'it.admin@vsmmc.gov.ph',
+    adminEmail: hospitalSession.email,
     adminPhone: '032-253-9891',
     departmentName: 'Main Admission Desk'
   });
 
   const handleSave = () => {
     setIsSaved(true);
-    setFacilityId('FACILITY-MVCH-ER-01');
+    setFacilityId(hospitalSession.facilityId || 'FACILITY-PENDING-ADM-01');
     setTimeout(() => setIsSaved(false), 3000);
+  };
+
+  const printDeskSign = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.print();
+    }
   };
 
   return (
@@ -36,6 +43,20 @@ export default function AdminIdentityScreen() {
         <View>
           <Text style={styles.title}>Institutional Identity</Text>
           <Text style={styles.subtitle}>Manage your hospital's verified presence on the Alalay platform.</Text>
+        </View>
+      </View>
+
+      <View style={[styles.statusCard, hospitalSession.verificationStatus === 'pending_review' && styles.statusCardPending]}>
+        <ShieldCheck color={hospitalSession.verificationStatus === 'verified' ? '#137A67' : '#975A16'} size={21} />
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.statusTitle, hospitalSession.verificationStatus === 'pending_review' && styles.statusTitlePending]}>
+            {hospitalSession.verificationStatus === 'verified' ? 'Facility identity verified' : 'Facility review pending'}
+          </Text>
+          <Text style={styles.statusText}>
+            {hospitalSession.verificationStatus === 'verified'
+              ? 'The facility credentials below are locked to the verified hospital account.'
+              : 'You can prepare settings, but production QR activation and patient data access remain unavailable until credential review is complete.'}
+          </Text>
         </View>
       </View>
 
@@ -136,11 +157,11 @@ export default function AdminIdentityScreen() {
               <Text style={styles.qrLabel}>Facility ID: {facilityId}</Text>
             </View>
             <View style={styles.qrActionArea}>
-              <Text style={styles.qrActionTitle}>Golden QR Generated</Text>
-              <Text style={styles.qrActionDesc}>This QR code contains your unique static facility routing ID. It ensures that when a patient scans it, their Alalay app knows exactly which hospital network to securely transmit their data to.</Text>
-              <TouchableOpacity style={styles.downloadBtn}>
+              <Text style={styles.qrActionTitle}>Admission desk QR ready</Text>
+              <Text style={styles.qrActionDesc}>Display or print this static desk code on the hospital laptop. The patient scans it to identify this admission desk before reviewing what will be shared.</Text>
+              <TouchableOpacity style={styles.downloadBtn} onPress={printDeskSign} accessibilityRole="button">
                 <QrCode color="#FFFFFF" size={16} />
-                <Text style={styles.downloadBtnText}>Download High-Res PDF</Text>
+                <Text style={styles.downloadBtnText}>Print desk sign</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -204,6 +225,11 @@ const styles = StyleSheet.create({
     padding: 32,
     marginBottom: 24,
   },
+  statusCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, backgroundColor: '#E6F5F1', borderWidth: 1, borderColor: '#B9DED5', borderRadius: 14, padding: 15, marginBottom: 22 },
+  statusCardPending: { backgroundColor: '#FFFAF0', borderColor: '#FEEBC8' },
+  statusTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#137A67' },
+  statusTitlePending: { color: '#975A16' },
+  statusText: { fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 16, color: '#718096', marginTop: 3 },
   cardHeader: {
     marginBottom: 24,
     borderBottomWidth: 1,
