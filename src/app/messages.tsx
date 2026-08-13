@@ -44,7 +44,7 @@ export default function MessagesScreen() {
               <Text style={styles.threadTitle}>Hospital bill</Text>
               <Text style={styles.threadTime}>Today</Text>
             </View>
-            <Text style={styles.threadMeta}>St. Luke’s Medical Center</Text>
+            <Text style={styles.threadMeta}>Seeded Cebu hospital bill</Text>
             <Text style={styles.threadPreview} numberOfLines={2}>Ask about the ₱45,200 total, PhilHealth, HMO, or remaining balance.</Text>
           </View>
           <ArrowRight color={COLORS.muted} size={19} />

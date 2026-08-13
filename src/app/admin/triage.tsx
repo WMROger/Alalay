@@ -34,7 +34,7 @@ export default function AdmissionQueueScreen() {
   const simulateIncomingScan = () => {
     if (!visitLog.hospitalName) {
       updateVisitLog({
-        hospitalName: 'Bacolod Doctors Hospital',
+        hospitalName: 'Vicente Sotto Memorial Medical Center (Demo)',
         deskName: 'Main Admission Desk',
         modeOfAdmission: 'ER',
         matchCode: '428',

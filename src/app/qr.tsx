@@ -26,16 +26,16 @@ interface HospitalDesk {
 
 const DEMO_DESKS: Record<'general' | 'specialist', HospitalDesk> = {
   general: {
-    hospitalId: 'bacolod-doctors',
+    hospitalId: 'vsmmc-demo',
     deskId: 'main-admissions',
-    hospitalName: 'Bacolod Doctors Hospital',
+    hospitalName: 'Vicente Sotto Memorial Medical Center (Demo)',
     deskName: 'Main Admission Desk',
     supportsLiveStatus: true,
   },
   specialist: {
     hospitalId: 'non-partner-demo',
     deskId: 'general-admissions',
-    hospitalName: 'Community Hospital (Demo)',
+    hospitalName: 'Cebu Community Hospital (Demo)',
     deskName: 'General Admission Desk',
     supportsLiveStatus: false,
   },

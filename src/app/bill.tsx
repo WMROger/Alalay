@@ -112,7 +112,7 @@ export default function BillReaderScreen() {
         <View style={styles.heroCopy}>
           <Text style={styles.heroEyebrow}>GROUNDED BILL EXPLANATION</Text>
           <Text style={styles.heroTitle}>Your hospital bill</Text>
-          <Text style={styles.heroSubtitle}>Explained using St. Luke's billing glossary</Text>
+          <Text style={styles.heroSubtitle}>Explained using a seeded Cebu hospital billing glossary</Text>
         </View>
       </View>
 
@@ -127,7 +127,7 @@ export default function BillReaderScreen() {
             </View>
             <View>
               <Text style={styles.title}>AI Bill Analysis</Text>
-              <Text style={styles.subtitle}>St. Luke's Medical Center • OCT 12</Text>
+              <Text style={styles.subtitle}>Cebu hospital demo bill • OCT 12</Text>
             </View>
           </View>
 

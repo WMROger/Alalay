@@ -84,7 +84,7 @@ const ELENA_IDENTITY = {
   dateOfBirth: '05/18/1984',
   sex: 'Female',
   civilStatus: 'Single',
-  address: 'Bacolod City, Negros Occidental',
+  address: 'Cebu City, Cebu',
   contactNumber: '0917 555 0142',
   memberCategory: 'Formal Economy',
 };
@@ -98,7 +98,7 @@ const createSeededBen = (source: 'egov' | 'demo'): Beneficiary => ({
   sex: 'Male',
   contactNumber: '0917 123 4567',
   pin: '12-987654321-0',
-  specialId: 'SC-BCD-680214',
+  specialId: 'SC-CEB-680214',
   knownAllergies: [],
   currentMedications: source === 'demo' ? ['Amlodipine 5 mg'] : [],
   chronicConditions: source === 'demo' ? ['Hypertension'] : [],
