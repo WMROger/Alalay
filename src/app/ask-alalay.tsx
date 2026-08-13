@@ -103,7 +103,7 @@ const destinations: AskDestination[] = [
     title: 'Documents',
     description: 'Open the patient reference sheet, MDR, CF1, prescriptions, and generated admission documents.',
     action: 'Open Documents',
-    route: '/reference',
+    route: '/documents',
     keywords: ['document', 'documents', 'mdr', 'prescription', 'reference sheet', 'form', 'paperwork', 'id card'],
     icon: <FileText color="#137A67" size={21} />,
   },

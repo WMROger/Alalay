@@ -1,4 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { create } from 'zustand';
+import { createJSONStorage, persist, StateStorage } from 'zustand/middleware';
 
 export interface Beneficiary {
   id: string;
@@ -25,6 +28,20 @@ export interface NotificationPreferences {
   philhealthPrograms: boolean;
   vaccinations: boolean;
   localHealthServices: boolean;
+}
+
+export type DocumentVerificationStatus = 'verified' | 'pending' | 'self_declared';
+export type PatientDocumentType = 'government_id' | 'prescription' | 'medical_abstract' | 'generated_reference';
+
+export interface PatientDocumentState {
+  id: string;
+  patientId: string;
+  type: PatientDocumentType;
+  title: string;
+  status: DocumentVerificationStatus;
+  source: string;
+  uri: string;
+  addedAt: string;
 }
 
 export type AdmissionStepId =
@@ -174,6 +191,7 @@ interface AdmissionStore {
   beneficiaries: Beneficiary[];
   activePatientId: string;
   pendingActions: PendingActionState[];
+  documents: PatientDocumentState[];
   hospitalSession: HospitalSessionState;
   
   // Actions
@@ -182,12 +200,14 @@ interface AdmissionStore {
   setActivePatient: (id: string) => void;
   addPendingAction: (action: PendingActionState) => void;
   updatePendingAction: (id: string, status: PendingActionState['status']) => void;
+  addDocument: (document: PatientDocumentState) => void;
   setHospitalSession: (session: HospitalSessionState) => void;
   logoutHospital: () => void;
   updateAdmissionStep: (id: AdmissionStepId, status: AdmissionStepStatus) => void;
   addBeneficiary: (b: Beneficiary) => void;
   updateBeneficiary: (id: string, data: Partial<Beneficiary>) => void;
   logout: () => void;
+  resetDemo: () => void;
 }
 
 const initialMasterProfile: MasterProfileState = {
@@ -233,8 +253,49 @@ const initialHospitalSession: HospitalSessionState = {
   accountMode: 'sign_in',
 };
 
+const memoryStorage = new Map<string, string>();
+
+// AsyncStorage is unavailable in some web/native preview environments. Keep the
+// pitch flow working there while still persisting normally on supported devices.
+const safeStorage: StateStorage = {
+  getItem: async (name) => {
+    try {
+      if (Platform.OS === 'web' && typeof globalThis.localStorage !== 'undefined') {
+        return globalThis.localStorage.getItem(name);
+      }
+      return await AsyncStorage.getItem(name);
+    } catch {
+      return memoryStorage.get(name) ?? null;
+    }
+  },
+  setItem: async (name, value) => {
+    memoryStorage.set(name, value);
+    try {
+      if (Platform.OS === 'web' && typeof globalThis.localStorage !== 'undefined') {
+        globalThis.localStorage.setItem(name, value);
+        return;
+      }
+      await AsyncStorage.setItem(name, value);
+    } catch {
+      // The in-memory copy still keeps this preview session usable.
+    }
+  },
+  removeItem: async (name) => {
+    memoryStorage.delete(name);
+    try {
+      if (Platform.OS === 'web' && typeof globalThis.localStorage !== 'undefined') {
+        globalThis.localStorage.removeItem(name);
+        return;
+      }
+      await AsyncStorage.removeItem(name);
+    } catch {
+      // Nothing else is required for the in-memory fallback.
+    }
+  },
+};
+
 // 2. Create Store
-export const useStore = create<AdmissionStore>((set) => ({
+export const useStore = create<AdmissionStore>()(persist((set) => ({
   hasOnboarded: false,
   setHasOnboarded: (val) => set({ hasOnboarded: val }),
   
@@ -243,6 +304,7 @@ export const useStore = create<AdmissionStore>((set) => ({
   beneficiaries: [],
   activePatientId: 'self',
   pendingActions: [],
+  documents: [],
   hospitalSession: initialHospitalSession,
   
   updateMasterProfile: (data) => set((state) => ({
@@ -263,6 +325,12 @@ export const useStore = create<AdmissionStore>((set) => ({
 
   updatePendingAction: (id, status) => set((state) => ({
     pendingActions: state.pendingActions.map((item) => item.id === id ? { ...item, status } : item),
+  })),
+
+  addDocument: (document) => set((state) => ({
+    documents: state.documents.some((item) => item.id === document.id)
+      ? state.documents.map((item) => item.id === document.id ? document : item)
+      : [document, ...state.documents],
   })),
 
   setHospitalSession: (hospitalSession) => set({ hospitalSession }),
@@ -300,12 +368,32 @@ export const useStore = create<AdmissionStore>((set) => ({
     ))
   })),
   
-  logout: () => set({ 
+  logout: () => set({
     hasOnboarded: false,
-    masterProfile: initialMasterProfile, 
+  }),
+
+  resetDemo: () => set({
+    hasOnboarded: false,
+    masterProfile: initialMasterProfile,
     visitLog: initialVisitLog,
     beneficiaries: [],
     activePatientId: 'self',
     pendingActions: [],
+    documents: [],
+    hospitalSession: initialHospitalSession,
   })
+}), {
+  name: 'alalay-demo-state-v2',
+  version: 2,
+  storage: createJSONStorage(() => safeStorage),
+  partialize: (state) => ({
+    hasOnboarded: state.hasOnboarded,
+    masterProfile: state.masterProfile,
+    visitLog: state.visitLog,
+    beneficiaries: state.beneficiaries,
+    activePatientId: state.activePatientId,
+    pendingActions: state.pendingActions,
+    documents: state.documents,
+    hospitalSession: state.hospitalSession,
+  }),
 }));

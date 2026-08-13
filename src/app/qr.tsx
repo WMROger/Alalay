@@ -112,6 +112,20 @@ export default function QRScreen() {
   const handleBarcodeScanned = ({ data }: { type: string; data: string }) => {
     if (scanned) return;
 
+    try {
+      const payload = JSON.parse(data) as { type?: string; referenceId?: string; patientId?: string };
+      if (payload.type === 'alalay-reference' && payload.referenceId) {
+        setScanned(true);
+        router.push({
+          pathname: '/verify-reference',
+          params: { referenceId: payload.referenceId, patientId: payload.patientId || '' },
+        });
+        return;
+      }
+    } catch {
+      // Hospital desk codes are not required to use the reference JSON format.
+    }
+
     // The production backend will validate the signed URL before returning desk data.
     // For the hackathon frontend demo, known QR content selects one of two seeded desks.
     const desk = data.toLowerCase().includes('non-partner') ? DEMO_DESKS.specialist : DEMO_DESKS.general;

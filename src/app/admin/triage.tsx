@@ -185,12 +185,47 @@ export default function AdmissionQueueScreen() {
   const pAllergy = visitLog.patientAllergies.length > 0 ? visitLog.patientAllergies.join(', ').toUpperCase() : (masterProfile.knownAllergies.length > 0 ? masterProfile.knownAllergies.join(', ').toUpperCase() : 'NONE KNOWN');
   const documentReferenceId = `ALALAY-${(visitLog.patientName || 'BEN-CRUZ').replace(/[^a-z0-9]/gi, '-').toUpperCase()}-${visitLog.matchCode || '428'}`;
   const documentQrPayload = JSON.stringify({
-    app: 'Alalay',
+    type: 'alalay-reference',
     referenceId: documentReferenceId,
-    patient: visitLog.patientName || 'Ben Cruz',
-    hospital: visitLog.hospitalName || 'Vicente Sotto Memorial Medical Center',
-    generatedAt: visitLog.documentsGeneratedAt || visitLog.consentAcknowledgedAt || 'demo',
+    patientId: visitLog.patientId || 'beneficiary-ben-cruz',
   });
+  const isSelfVisit = visitLog.patientId === 'self' || visitLog.patientRelationship === 'My profile';
+  const approvingPerson = visitLog.consentAcknowledgedBy
+    || (isSelfVisit ? visitLog.patientName : `${masterProfile.firstName} ${masterProfile.lastName}`.trim())
+    || 'Account holder';
+  const consentStatement = isSelfVisit
+    ? `I confirm that this is my information and agree to share the details shown above with ${visitLog.hospitalName || 'the hospital'} for this visit.`
+    : `I confirm that I am assisting ${visitLog.patientName || 'the selected patient'} and agree to share the information shown above with ${visitLog.hospitalName || 'the hospital'} for this visit.`;
+  const hasIncomingPatient = scanState !== 'listening';
+  const queueEntries = [
+    ...(hasIncomingPatient ? [{
+      id: 'current-arrival',
+      name: visitLog.patientName || 'Ben Cruz',
+      detail: `${visitLog.modeOfAdmission || 'ER'} · ${visitLog.patientRelationship || 'Father'}`,
+      arrived: 'Just now',
+      status: scanState === 'matched' ? 'Record open' : scanState === 'pending' ? 'Needs match code' : 'Receiving',
+      tone: scanState === 'matched' ? 'matched' : 'new',
+      isNew: true,
+    }] : []),
+    {
+      id: 'seeded-maria',
+      name: 'Maria Santos',
+      detail: 'OPD · My profile',
+      arrived: '11:26 AM',
+      status: 'Waiting for registrar',
+      tone: 'waiting',
+      isNew: false,
+    },
+    {
+      id: 'seeded-joel',
+      name: 'Joel Ramos',
+      detail: 'Transfer · My profile',
+      arrived: '11:18 AM',
+      status: 'Matched',
+      tone: 'matched',
+      isNew: false,
+    },
+  ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator>
@@ -204,13 +239,50 @@ export default function AdmissionQueueScreen() {
         </View>
         
         {/* Hidden Simulation Button for Pitch */}
-        <TouchableOpacity style={styles.simBtn} onPress={simulateIncomingScan}>
+        <TouchableOpacity style={styles.simBtn} onPress={simulateIncomingScan} accessibilityRole="button" accessibilityLabel="Add sample check-in">
           <Smartphone color="#718096" size={16} />
           <Text style={styles.simBtnText}>Add sample check-in</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
+        <View style={styles.queueCard}>
+          <View style={styles.queueHeader}>
+            <View>
+              <Text style={styles.queueEyebrow}>LIVE INCOMING QUEUE</Text>
+              <Text style={styles.queueTitle}>{queueEntries.length} administrative check-ins</Text>
+            </View>
+            <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={styles.liveBadgeText}>LIVE DEMO</Text></View>
+          </View>
+          <Text style={styles.queueNotice}>Arrival order only. Alalay does not rank medical urgency.</Text>
+          <View style={styles.queueList}>
+            {queueEntries.map((entry) => (
+              <View key={entry.id} style={[styles.queueRow, entry.isNew && styles.queueRowNew]}>
+                <View style={[styles.queueAvatar, entry.isNew && styles.queueAvatarNew]}>
+                  <Text style={[styles.queueAvatarText, entry.isNew && styles.queueAvatarTextNew]}>{entry.name.charAt(0)}</Text>
+                </View>
+                <View style={styles.queuePatientCopy}>
+                  <View style={styles.queueNameRow}>
+                    <Text style={styles.queuePatientName}>{entry.name}</Text>
+                    {entry.isNew ? <Text style={styles.queueNewLabel}>NEW ARRIVAL</Text> : null}
+                  </View>
+                  <Text style={styles.queuePatientMeta}>{entry.detail} · Arrived {entry.arrived}</Text>
+                </View>
+                <View style={[
+                  styles.queueStatus,
+                  entry.tone === 'matched' && styles.queueStatusMatched,
+                  entry.tone === 'new' && styles.queueStatusNew,
+                ]}>
+                  <Text style={[
+                    styles.queueStatusText,
+                    entry.tone === 'matched' && styles.queueStatusTextMatched,
+                    entry.tone === 'new' && styles.queueStatusTextNew,
+                  ]}>{entry.status}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
         
         {scanState === 'listening' && (
           <View style={styles.listeningArea}>
@@ -547,16 +619,16 @@ export default function AdmissionQueueScreen() {
                   </View>
 
                   <Text style={styles.consentTitle}>Patient-authorized sharing record</Text>
-                  <Text style={styles.consentIntro}>This page records the information Elena reviewed and approved for this hospital visit.</Text>
+                  <Text style={styles.consentIntro}>This page records the information {approvingPerson} reviewed and approved for this hospital visit.</Text>
 
                   <View style={styles.consentStatement}>
                     <CheckCircle2 color="#137A67" size={22} />
-                    <Text style={styles.consentStatementText}>I confirm that I am assisting {visitLog.patientName || 'Ben Cruz'} and agree to share the information shown above with {visitLog.hospitalName || 'Vicente Sotto Memorial Medical Center'} for this visit.</Text>
+                    <Text style={styles.consentStatementText}>{consentStatement}</Text>
                   </View>
 
                   <Text style={styles.previewSectionTitle}>SHARING DETAILS</Text>
                   <View style={styles.consentDetailRow}><Text style={styles.consentDetailLabel}>Patient</Text><Text style={styles.consentDetailValue}>{visitLog.patientName || 'Ben Cruz'} · {visitLog.patientRelationship || 'Father'}</Text></View>
-                  <View style={styles.consentDetailRow}><Text style={styles.consentDetailLabel}>Approved by</Text><Text style={styles.consentDetailValue}>{visitLog.consentAcknowledgedBy || 'Elena Cruz'}</Text></View>
+                  <View style={styles.consentDetailRow}><Text style={styles.consentDetailLabel}>Approved by</Text><Text style={styles.consentDetailValue}>{approvingPerson}</Text></View>
                   <View style={styles.consentDetailRow}><Text style={styles.consentDetailLabel}>Hospital desk</Text><Text style={styles.consentDetailValue}>{visitLog.hospitalName} · {visitLog.deskName}</Text></View>
                   <View style={styles.consentDetailRow}><Text style={styles.consentDetailLabel}>Recorded at</Text><Text style={styles.consentDetailValue}>{visitLog.consentAcknowledgedAt ? new Date(visitLog.consentAcknowledgedAt).toLocaleString() : 'Not recorded'}</Text></View>
                   <View style={styles.consentDetailRow}><Text style={styles.consentDetailLabel}>Visit contact</Text><Text style={styles.consentDetailValue}>{visitLog.visitEmergencyContact ? `${visitLog.visitEmergencyContact.name} · ${visitLog.visitEmergencyContact.relationship} · Visit only` : `${visitLog.savedEmergencyContact.name} · Saved profile contact`}</Text></View>
@@ -574,7 +646,7 @@ export default function AdmissionQueueScreen() {
                   </View>
 
                   <View style={styles.signatureRow}>
-                    <View style={styles.signatureBlock}><Text style={styles.digitalSignature}>{visitLog.consentAcknowledgedBy || 'Elena Cruz'}</Text><View style={styles.signatureLine} /><Text style={styles.signatureLabel}>Digitally acknowledged by</Text></View>
+                    <View style={styles.signatureBlock}><Text style={styles.digitalSignature}>{approvingPerson}</Text><View style={styles.signatureLine} /><Text style={styles.signatureLabel}>Digitally acknowledged by</Text></View>
                     <View style={styles.signatureBlock}><Text style={styles.digitalSignature}>{visitLog.consentAcknowledgedAt ? new Date(visitLog.consentAcknowledgedAt).toLocaleDateString() : '—'}</Text><View style={styles.signatureLine} /><Text style={styles.signatureLabel}>Date</Text></View>
                   </View>
                 </View>
@@ -605,6 +677,33 @@ const styles = StyleSheet.create({
   simBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#718096' },
 
   content: { flex: 1 },
+
+  queueCard: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE7E3', borderRadius: 18, padding: 18, marginBottom: 18 },
+  queueHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 },
+  queueEyebrow: { fontFamily: 'Inter_700Bold', fontSize: 8, letterSpacing: 1.1, color: '#137A67' },
+  queueTitle: { fontFamily: 'Sora_700Bold', fontSize: 17, color: '#1A202C', marginTop: 4 },
+  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E6F5F1', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#137A67' },
+  liveBadgeText: { fontFamily: 'Inter_700Bold', fontSize: 7, letterSpacing: 0.7, color: '#137A67' },
+  queueNotice: { fontFamily: 'Inter_400Regular', fontSize: 10, color: '#718096', marginTop: 5, marginBottom: 13 },
+  queueList: { gap: 8 },
+  queueRow: { minHeight: 67, flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#EDF2F7', borderRadius: 13, padding: 11 },
+  queueRowNew: { backgroundColor: '#F0FFF8', borderColor: '#9ED6C9' },
+  queueAvatar: { width: 39, height: 39, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E8EEF2' },
+  queueAvatarNew: { backgroundColor: '#137A67' },
+  queueAvatarText: { fontFamily: 'Sora_700Bold', fontSize: 14, color: '#4A6170' },
+  queueAvatarTextNew: { color: '#FFFFFF' },
+  queuePatientCopy: { flex: 1 },
+  queueNameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 7 },
+  queuePatientName: { fontFamily: 'Sora_600SemiBold', fontSize: 12, color: '#2D3748' },
+  queueNewLabel: { fontFamily: 'Inter_700Bold', fontSize: 7, letterSpacing: 0.7, color: '#137A67' },
+  queuePatientMeta: { fontFamily: 'Inter_400Regular', fontSize: 9, color: '#718096', marginTop: 4 },
+  queueStatus: { borderRadius: 999, backgroundColor: '#FFF3DD', paddingHorizontal: 9, paddingVertical: 6 },
+  queueStatusNew: { backgroundColor: '#E6F5F1' },
+  queueStatusMatched: { backgroundColor: '#EAF2FF' },
+  queueStatusText: { fontFamily: 'Inter_600SemiBold', fontSize: 8, color: '#975A16' },
+  queueStatusTextNew: { color: '#137A67' },
+  queueStatusTextMatched: { color: '#246BCE' },
 
   listeningArea: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center', minHeight: 400 },
   radarCircle: { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: '#EBF4FF' },

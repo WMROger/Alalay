@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Href, useRouter } from 'expo-router';
-import { ArrowRight, FileText, HeartPulse, LogOut, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react-native';
+import { ArrowRight, FileText, HeartPulse, LogOut, RotateCcw, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react-native';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppBottomNav } from '../components/AppBottomNav';
 import { useStore } from '../store/useStore';
@@ -21,7 +21,9 @@ export default function ProfileScreen() {
   const masterProfile = useStore((state) => state.masterProfile);
   const beneficiaries = useStore((state) => state.beneficiaries);
   const logout = useStore((state) => state.logout);
+  const resetDemo = useStore((state) => state.resetDemo);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const firstName = masterProfile.firstName || 'Juan';
   const lastName = masterProfile.lastName || 'Dela Cruz';
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -29,6 +31,12 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     logout();
     setShowLogoutConfirmation(false);
+    router.replace('/login');
+  };
+
+  const handleResetDemo = () => {
+    resetDemo();
+    setShowResetConfirmation(false);
     router.replace('/login');
   };
 
@@ -71,9 +79,9 @@ export default function ProfileScreen() {
             <ArrowRight color={COLORS.muted} size={18} />
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/reference')}>
+          <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/documents' as Href)}>
             <View style={styles.menuIcon}><FileText color={COLORS.primary} size={20} /></View>
-            <View style={styles.menuCopy}><Text style={styles.menuTitle}>Reference documents</Text><Text style={styles.menuText}>View MDR and CF1 forms</Text></View>
+            <View style={styles.menuCopy}><Text style={styles.menuTitle}>Documents</Text><Text style={styles.menuText}>View statuses, uploads, MDR and CF1 references</Text></View>
             <ArrowRight color={COLORS.muted} size={18} />
           </TouchableOpacity>
           <View style={styles.divider} />
@@ -103,6 +111,19 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={() => setShowResetConfirmation(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Reset Alalay demo data"
+        >
+          <View style={styles.resetIcon}><RotateCcw color="#A15C00" size={20} /></View>
+          <View style={styles.menuCopy}>
+            <Text style={styles.resetTitle}>Reset demo data</Text>
+            <Text style={styles.menuText}>Clear the pitch flow and start from the seeded sign-in</Text>
+          </View>
+        </TouchableOpacity>
+
         <Text style={styles.privacyText}>Alalay keeps patient profiles private until you approve a hospital’s request.</Text>
       </ScrollView>
 
@@ -122,13 +143,40 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <View style={styles.logoutModalIcon}><LogOut color="#B33A3A" size={27} /></View>
             <Text style={styles.logoutModalTitle}>Log out of Alalay?</Text>
-            <Text style={styles.logoutModalText}>You will return to the sign-in screen. This prototype clears the locally stored demo profile when you log out.</Text>
+            <Text style={styles.logoutModalText}>You will return to the sign-in screen. Your saved patient information will stay on this device.</Text>
             <View style={styles.logoutActions}>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setShowLogoutConfirmation(false)} accessibilityRole="button">
                 <Text style={styles.cancelButtonText}>Stay signed in</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmLogoutButton} onPress={handleLogout} accessibilityRole="button">
                 <Text style={styles.confirmLogoutText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showResetConfirmation}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowResetConfirmation(false)}
+      >
+        <View style={styles.modalRoot}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowResetConfirmation(false)} />
+          <View style={styles.logoutSheet}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setShowResetConfirmation(false)} accessibilityLabel="Close reset confirmation">
+              <X color={COLORS.muted} size={20} />
+            </TouchableOpacity>
+            <View style={styles.resetModalIcon}><RotateCcw color="#A15C00" size={27} /></View>
+            <Text style={styles.logoutModalTitle}>Reset the pitch demo?</Text>
+            <Text style={styles.logoutModalText}>This clears the patient profiles, uploads, check-in, hospital status, and generated documents stored on this device.</Text>
+            <View style={styles.logoutActions}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowResetConfirmation(false)} accessibilityRole="button">
+                <Text style={styles.cancelButtonText}>Keep demo data</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmResetButton} onPress={handleResetDemo} accessibilityRole="button">
+                <Text style={styles.confirmLogoutText}>Reset demo</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -166,17 +214,22 @@ const styles = StyleSheet.create({
   logoutButton: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F0D0D0', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 11 },
   logoutIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center' },
   logoutTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#A83232' },
+  resetButton: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F0DFC0', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 11, marginTop: 9 },
+  resetIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: '#FFF3DD', alignItems: 'center', justifyContent: 'center' },
+  resetTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: '#A15C00' },
   privacyText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: COLORS.muted, textAlign: 'center', marginTop: 20, paddingHorizontal: 15 },
   modalRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
   modalBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(10, 28, 34, 0.58)' },
   logoutSheet: { width: '100%', maxWidth: 420, alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 26, paddingHorizontal: 22, paddingTop: 28, paddingBottom: 22 },
   closeButton: { position: 'absolute', top: 13, right: 13, width: 39, height: 39, borderRadius: 13, backgroundColor: '#F0F4F3', alignItems: 'center', justifyContent: 'center' },
   logoutModalIcon: { width: 61, height: 61, borderRadius: 20, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
+  resetModalIcon: { width: 61, height: 61, borderRadius: 20, backgroundColor: '#FFF3DD', alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
   logoutModalTitle: { fontFamily: 'Sora_700Bold', fontSize: 20, color: COLORS.ink },
   logoutModalText: { maxWidth: 340, fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 19, color: COLORS.muted, textAlign: 'center', marginTop: 7 },
   logoutActions: { width: '100%', flexDirection: 'row', gap: 9, marginTop: 20 },
   cancelButton: { flex: 1, minHeight: 49, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.line, borderRadius: 15 },
   cancelButtonText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: COLORS.muted },
   confirmLogoutButton: { flex: 1, minHeight: 49, alignItems: 'center', justifyContent: 'center', backgroundColor: '#B33A3A', borderRadius: 15 },
+  confirmResetButton: { flex: 1, minHeight: 49, alignItems: 'center', justifyContent: 'center', backgroundColor: '#A15C00', borderRadius: 15 },
   confirmLogoutText: { fontFamily: 'Sora_600SemiBold', fontSize: 12, color: '#FFFFFF' },
 });

@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { AppBottomNav } from '../components/AppBottomNav';
 import { AdmissionJourney } from '../components/AdmissionJourney';
+import { BenefitsBoard } from '../components/BenefitsBoard';
 import { MissingItemsBoard } from '../components/MissingItemsBoard';
 import { useStore } from '../store/useStore';
 
@@ -166,9 +167,10 @@ export default function DashboardScreen() {
 
         <AdmissionJourney />
         <MissingItemsBoard />
+        <BenefitsBoard />
 
         <View style={styles.sectionHeadingRow}>
-          <View>
+          <View style={styles.sectionHeadingCopy}>
             <Text style={styles.sectionEyebrow}>FAMILY</Text>
             <Text style={styles.sectionTitle}>Choose who you’re preparing for</Text>
           </View>
@@ -289,10 +291,10 @@ export default function DashboardScreen() {
           <QuickAction
             wide={isWide}
             title="Documents"
-            description="View MDR and CF1"
+            description="View patient files"
             iconBackground={COLORS.primarySoft}
             icon={<FileText color={COLORS.primary} size={23} />}
-            onPress={() => router.push('/reference')}
+            onPress={() => router.push('/documents' as Href)}
           />
           <QuickAction
             wide={isWide}
@@ -341,6 +343,7 @@ const styles = StyleSheet.create({
   formButtonText: { fontFamily: 'Sora_600SemiBold', fontSize: 14, color: COLORS.navy },
 
   sectionHeadingRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 13 },
+  sectionHeadingCopy: { flex: 1, paddingRight: 12 },
   sectionHeading: { marginTop: 29, marginBottom: 13 },
   sectionEyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 1.4, color: COLORS.primary, marginBottom: 4 },
   sectionTitle: { fontFamily: 'Sora_700Bold', fontSize: 19, color: COLORS.ink },

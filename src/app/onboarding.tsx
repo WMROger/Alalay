@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -18,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Bell,
+  Camera,
   CheckCircle2,
   ChevronLeft,
   FileText,
@@ -323,6 +325,29 @@ export default function OnboardingScreen() {
     }, 700);
   };
 
+  const handleMDRCapture = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Camera access needed', 'Allow camera access to photograph the MDR, or choose an existing photo instead.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+
+    setMdrImageUri(result.assets[0].uri);
+    setImportingSource('mdr');
+    setTimeout(() => {
+      applyElenaIdentity('mdr');
+      setOnboardingBeneficiaries([createSeededBen('mdr')]);
+      setImportingSource('');
+      setStep(2);
+    }, 700);
+  };
+
   const continueManually = () => {
     setIdentitySource('manual');
     setStep(2);
@@ -330,6 +355,20 @@ export default function OnboardingScreen() {
 
   const pickImage = async (onSelected: (uri: string) => void) => {
     const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled) onSelected(result.assets[0].uri);
+  };
+
+  const captureImage = async (onSelected: (uri: string) => void) => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Camera access needed', 'Allow camera access to take a document photo, or choose an existing image instead.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
@@ -566,6 +605,15 @@ export default function OnboardingScreen() {
                   <Text style={styles.optionText}>Use the photo picker if you have a different MDR available.</Text>
                 </View>
                 {importingSource === 'mdr' ? <ActivityIndicator color={COLORS.blue} /> : <Text style={[styles.entryArrow, styles.entryArrowDark]}>›</Text>}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.cameraOptionCard} onPress={handleMDRCapture} disabled={Boolean(importingSource)} accessibilityRole="button">
+                <View style={[styles.entryIcon, styles.entryIconCamera]}><Camera color={COLORS.primary} size={24} /></View>
+                <View style={styles.entryCopy}>
+                  <Text style={styles.optionTitle}>Take an MDR photo</Text>
+                  <Text style={styles.optionText}>Open the camera and keep all four corners visible.</Text>
+                </View>
+                <Text style={[styles.entryArrow, styles.entryArrowDark]}>›</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.demoButton} onPress={continueManually} disabled={Boolean(importingSource)} accessibilityRole="button">
@@ -830,6 +878,14 @@ export default function OnboardingScreen() {
                     </View>
                     {beneficiaryForm.prescriptionPhotoUrl && <CheckCircle2 color={COLORS.primary} size={20} />}
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.compactCameraButton}
+                    onPress={() => captureImage((prescriptionPhotoUrl) => setBeneficiaryForm((current) => ({ ...current, prescriptionPhotoUrl })))}
+                    accessibilityRole="button"
+                  >
+                    <Camera color={COLORS.blue} size={17} />
+                    <Text style={styles.compactCameraText}>Take prescription photo</Text>
+                  </TouchableOpacity>
 
                   <Text style={styles.formSectionTitle}>Emergency contact</Text>
                   <TextInput style={styles.input} value={beneficiaryForm.emergencyName} onChangeText={(emergencyNameValue) => setBeneficiaryForm((current) => ({ ...current, emergencyName: emergencyNameValue }))} placeholder="Contact name" />
@@ -873,6 +929,11 @@ export default function OnboardingScreen() {
                 )}
                 <Text style={styles.largeUploadTitle}>{secondaryIdUri ? 'Secondary ID attached' : 'Upload a secondary government ID'}</Text>
                 <Text style={styles.largeUploadText}>Optional photo upload · You can complete this later</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.captureIdButton} onPress={() => captureImage(setSecondaryIdUri)} accessibilityRole="button">
+                <Camera color={COLORS.blue} size={18} />
+                <Text style={styles.captureIdText}>Take ID photo</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.notNowButton} onPress={() => setSecondaryIdUri('')}>
@@ -1036,6 +1097,8 @@ const styles = StyleSheet.create({
   entryArrow: { fontFamily: 'Inter_400Regular', fontSize: 30, color: '#FFFFFF' },
   entryArrowDark: { color: COLORS.muted },
   optionCard: { minHeight: 94, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.line, borderRadius: 20, padding: 16 },
+  cameraOptionCard: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#F3FBF8', borderWidth: 1, borderColor: '#BFE4DB', borderRadius: 20, padding: 16 },
+  entryIconCamera: { backgroundColor: COLORS.primarySoft },
   optionTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 14, color: COLORS.ink },
   optionText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: COLORS.muted, marginTop: 4 },
   demoButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: COLORS.primarySoft, borderWidth: 1, borderColor: '#BFE4DB', borderRadius: 16 },
@@ -1103,6 +1166,8 @@ const styles = StyleSheet.create({
   reconciliationCard: { flexDirection: 'row', gap: 9, backgroundColor: COLORS.blueSoft, borderRadius: 13, padding: 11, marginBottom: 12 },
   reconciliationText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 16, color: '#466379' },
   compactUpload: { minHeight: 65, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderWidth: 1, borderStyle: 'dashed', borderColor: '#BCD3DE', borderRadius: 14, padding: 12, marginBottom: 13 },
+  compactCameraButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: COLORS.blueSoft, borderRadius: 12, marginTop: -5, marginBottom: 13 },
+  compactCameraText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: COLORS.blue },
   compactUploadCopy: { flex: 1 },
   compactUploadTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: COLORS.blue },
   compactUploadText: { fontFamily: 'Inter_400Regular', fontSize: 9, color: COLORS.muted, marginTop: 2 },
@@ -1113,6 +1178,8 @@ const styles = StyleSheet.create({
   saveFormButton: { flex: 1.5, minHeight: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary, borderRadius: 14 },
   saveFormText: { fontFamily: 'Sora_600SemiBold', fontSize: 12, color: '#FFFFFF' },
   largeUpload: { minHeight: 170, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: '#B9CFD9', borderRadius: 18, padding: 17, overflow: 'hidden' },
+  captureIdButton: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.blueSoft, borderRadius: 14, marginTop: 9 },
+  captureIdText: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: COLORS.blue },
   largeUploadIcon: { width: 58, height: 58, borderRadius: 19, backgroundColor: COLORS.blueSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   largeUploadTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: COLORS.ink, marginTop: 8 },
   largeUploadText: { fontFamily: 'Inter_400Regular', fontSize: 10, color: COLORS.muted, marginTop: 4 },
