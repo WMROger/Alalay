@@ -1,15 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing, TextInput } from 'react-native';
 import { CheckCircle2, ClipboardList, Contact, FileCheck, KeyRound, Pill, ShieldCheck, UserPlus, Smartphone } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import QRCode from 'react-native-qrcode-svg';
 import { createInitialAdmissionSteps, useStore } from '../../store/useStore';
 import { StaffStatusBoard } from '../../components/StaffStatusBoard';
 
 type PreviewTab = 'admission' | 'cf1' | 'consent';
 
+const DOCUMENT_TEMPLATES: { name: string; previewTab: PreviewTab; meta: string }[] = [
+  { name: 'PhilHealth MDR-equivalent', previewTab: 'admission', meta: 'Patient-authorized membership reference' },
+  { name: 'VSMMC Admission Form', previewTab: 'admission', meta: 'Hospital admission details' },
+  { name: 'PhilHealth CF1', previewTab: 'cf1', meta: 'Member and patient claim information' },
+  { name: 'Patient Consent', previewTab: 'consent', meta: 'Visit-sharing consent and signature record' },
+];
+
+const PREVIEW_TABS: { id: PreviewTab; label: string }[] = [
+  { id: 'admission', label: 'ADMISSION FORM' },
+  { id: 'cf1', label: 'CF1' },
+  { id: 'consent', label: 'CONSENT' },
+];
+
 export default function AdmissionQueueScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ preview?: string }>();
+  const openedTemplatePreview = useRef(false);
   const [scanState, setScanState] = useState<'listening' | 'receiving' | 'pending' | 'matched'>('listening');
   const [enteredCode, setEnteredCode] = useState('');
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
@@ -43,7 +58,7 @@ export default function AdmissionQueueScreen() {
     }
   }, [scanState]);
 
-  const simulateIncomingScan = () => {
+  const simulateIncomingScan = (openPreview?: PreviewTab) => {
     setHasOnboarded(true);
     if (!masterProfile.firstName) {
       updateMasterProfile({
@@ -124,11 +139,28 @@ export default function AdmissionQueueScreen() {
         consentAcknowledgedBy: 'Elena Cruz',
       });
     }
-    setScanState('receiving');
-    setTimeout(() => {
-      setScanState('pending');
-    }, 1500);
+    if (openPreview) {
+      const template = DOCUMENT_TEMPLATES.find((item) => item.previewTab === openPreview)?.name || 'VSMMC Admission Form';
+      const generatedAt = new Date().toISOString();
+      updateVisitLog({ status: 'matched', generatedDocuments: [template], documentsGeneratedAt: generatedAt });
+      setSelectedDocuments([template]);
+      setActivePreviewTab(openPreview);
+      setPreviewGenerated(true);
+      setScanState('matched');
+    } else {
+      setScanState('receiving');
+      setTimeout(() => {
+        setScanState('pending');
+      }, 1500);
+    }
   };
+
+  useEffect(() => {
+    if (openedTemplatePreview.current) return;
+    if (params.preview !== 'cf1' && params.preview !== 'consent') return;
+    openedTemplatePreview.current = true;
+    simulateIncomingScan(params.preview);
+  }, [params.preview]);
 
   const handleReject = () => {
     setScanState('listening');
@@ -161,7 +193,8 @@ export default function AdmissionQueueScreen() {
   const generatePreview = () => {
     const generatedAt = new Date().toISOString();
     updateVisitLog({ generatedDocuments: selectedDocuments, documentsGeneratedAt: generatedAt });
-    setActivePreviewTab('admission');
+    const firstSelectedTemplate = DOCUMENT_TEMPLATES.find((template) => selectedDocuments.includes(template.name));
+    setActivePreviewTab(firstSelectedTemplate?.previewTab || 'admission');
     setPreviewGenerated(true);
   };
 
@@ -239,7 +272,7 @@ export default function AdmissionQueueScreen() {
         </View>
         
         {/* Hidden Simulation Button for Pitch */}
-        <TouchableOpacity style={styles.simBtn} onPress={simulateIncomingScan} accessibilityRole="button" accessibilityLabel="Add sample check-in">
+        <TouchableOpacity style={styles.simBtn} onPress={() => simulateIncomingScan()} accessibilityRole="button" accessibilityLabel="Add sample check-in">
           <Smartphone color="#718096" size={16} />
           <Text style={styles.simBtnText}>Add sample check-in</Text>
         </TouchableOpacity>
@@ -371,16 +404,16 @@ export default function AdmissionQueueScreen() {
                 <Text style={styles.selectedCount}>{selectedDocuments.length} SELECTED</Text>
               </View>
               <View style={styles.documentChoicesRow}>
-                {['PhilHealth MDR-equivalent', 'VSMMC Admission Form'].map((document) => {
-                  const selected = selectedDocuments.includes(document);
+                {DOCUMENT_TEMPLATES.map((template) => {
+                  const selected = selectedDocuments.includes(template.name);
                   return (
-                    <TouchableOpacity key={document} style={[styles.documentTemplateChoice, selected && styles.documentTemplateChoiceSelected]} onPress={() => toggleDocument(document)}>
+                    <TouchableOpacity key={template.name} style={[styles.documentTemplateChoice, selected && styles.documentTemplateChoiceSelected]} onPress={() => toggleDocument(template.name)}>
                       <View style={[styles.documentCheckbox, selected && styles.documentCheckboxSelected]}>{selected && <Text style={styles.documentCheckmark}>✓</Text>}</View>
-                      <View style={{ flex: 1 }}><Text style={styles.documentTemplateTitle}>{document}</Text><Text style={styles.documentTemplateMeta}>Populated from the patient-authorized visit snapshot</Text></View>
+                      <View style={{ flex: 1 }}><Text style={styles.documentTemplateTitle}>{template.name}</Text><Text style={styles.documentTemplateMeta}>{template.meta}</Text></View>
                     </TouchableOpacity>
                   );
                 })}
-                <TouchableOpacity style={[styles.generateButton, selectedDocuments.length !== 2 && styles.generateButtonDisabled]} onPress={generatePreview} disabled={selectedDocuments.length !== 2}>
+                <TouchableOpacity style={[styles.generateButton, selectedDocuments.length === 0 && styles.generateButtonDisabled]} onPress={generatePreview} disabled={selectedDocuments.length === 0}>
                   <FileCheck color="#FFFFFF" size={17} /><Text style={styles.generateButtonText}>{previewGenerated ? 'Preview generated' : 'Generate preview'}</Text>
                 </TouchableOpacity>
               </View>
@@ -394,11 +427,7 @@ export default function AdmissionQueueScreen() {
               </TouchableOpacity>
               
               <View style={styles.pdfViewerTabs}>
-                {([
-                  { id: 'admission', label: 'ADMISSION FORM' },
-                  { id: 'cf1', label: 'CF1' },
-                  { id: 'consent', label: 'CONSENT' },
-                ] as { id: PreviewTab; label: string }[]).map((tab) => {
+                {PREVIEW_TABS.map((tab) => {
                   const active = activePreviewTab === tab.id;
                   return (
                     <TouchableOpacity
@@ -752,15 +781,15 @@ const styles = StyleSheet.create({
   documentPickerTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 17, color: '#1A202C' },
   documentPickerText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: '#718096', marginTop: 4 },
   selectedCount: { fontFamily: 'Inter_700Bold', fontSize: 8, letterSpacing: 0.8, color: '#246BCE', backgroundColor: '#EBF4FF', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
-  documentChoicesRow: { flexDirection: 'row', alignItems: 'stretch', gap: 10 },
-  documentTemplateChoice: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 11, padding: 12, backgroundColor: '#F8FAFC' },
+  documentChoicesRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch', gap: 10 },
+  documentTemplateChoice: { flexGrow: 1, flexBasis: 220, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 11, padding: 12, backgroundColor: '#F8FAFC' },
   documentTemplateChoiceSelected: { borderColor: '#7EB5F8', backgroundColor: '#F0F6FF' },
   documentCheckbox: { width: 20, height: 20, borderWidth: 1.5, borderColor: '#A0AEC0', borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
   documentCheckboxSelected: { borderColor: '#246BCE', backgroundColor: '#246BCE' },
   documentCheckmark: { fontFamily: 'Inter_700Bold', fontSize: 12, color: '#FFFFFF' },
   documentTemplateTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 11, lineHeight: 16, color: '#2D3748' },
   documentTemplateMeta: { fontFamily: 'Inter_400Regular', fontSize: 9, lineHeight: 14, color: '#718096', marginTop: 3 },
-  generateButton: { minWidth: 150, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: '#246BCE', borderRadius: 10, paddingHorizontal: 14 },
+  generateButton: { minWidth: 170, minHeight: 58, flexGrow: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: '#246BCE', borderRadius: 10, paddingHorizontal: 14 },
   generateButtonDisabled: { backgroundColor: '#A0AEC0' },
   generateButtonText: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: '#FFFFFF' },
 

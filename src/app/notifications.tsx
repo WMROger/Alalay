@@ -10,7 +10,8 @@ import {
   Syringe,
 } from 'lucide-react-native';
 import { ReactNode } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store/useStore';
 
 const COLORS = {
@@ -41,6 +42,7 @@ function ageFromDate(dateOfBirth?: string) {
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const masterProfile = useStore((state) => state.masterProfile);
   const beneficiaries = useStore((state) => state.beneficiaries);
   const activePatientId = useStore((state) => state.activePatientId);
@@ -104,7 +106,7 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Back">
           <ChevronLeft color={COLORS.navy} size={23} />
@@ -113,7 +115,7 @@ export default function NotificationsScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(40, insets.bottom + 24) }]} showsVerticalScrollIndicator={false}>
         <View style={styles.patientBanner}>
           <View>
             <Text style={styles.eyebrow}>SHOWING FOR</Text>

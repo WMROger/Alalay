@@ -1,6 +1,7 @@
 import { Href, useRouter } from 'expo-router';
 import { Home, MessageCircle, QrCode, UserRound, UsersRound } from 'lucide-react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type AppTab = 'home' | 'family' | 'messages' | 'profile';
 
@@ -17,11 +18,13 @@ const COLORS = {
 
 export function AppBottomNav({ active }: AppBottomNavProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const safeBottom = Math.max(insets.bottom, 8);
 
   const tabColor = (tab: AppTab) => active === tab ? COLORS.active : COLORS.muted;
 
   return (
-    <View style={styles.shell}>
+    <View style={[styles.shell, { height: 68 + safeBottom, paddingBottom: safeBottom }]}>
       <TouchableOpacity
         style={styles.item}
         onPress={() => router.replace('/dashboard')}
@@ -80,7 +83,6 @@ export function AppBottomNav({ active }: AppBottomNavProps) {
 
 const styles = StyleSheet.create({
   shell: {
-    height: 76,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
@@ -93,10 +95,10 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 14,
   },
-  item: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  item: { flex: 1, height: 68, alignItems: 'center', justifyContent: 'center', gap: 5 },
   label: { fontFamily: 'Inter_500Medium', fontSize: 10, color: COLORS.muted },
   labelActive: { color: COLORS.active, fontFamily: 'Inter_600SemiBold' },
-  scanSlot: { flex: 1.14, height: '100%', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 9 },
+  scanSlot: { flex: 1.14, height: 68, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 9 },
   scanButton: {
     position: 'absolute',
     top: -24,

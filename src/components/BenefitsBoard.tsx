@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { ArrowRight, ChevronDown, ChevronUp, CircleDollarSign, HeartHandshake, ShieldCheck } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { Bell, CalendarHeart, ChevronDown, ChevronUp, CircleDollarSign, HeartHandshake, MapPin, ShieldCheck, SlidersHorizontal, Syringe } from 'lucide-react-native';
+import { ReactNode, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useStore } from '../store/useStore';
 
@@ -10,6 +10,14 @@ type BenefitSuggestion = {
   summary: string;
   detail: string;
   tag: string;
+};
+
+type HealthOpportunity = {
+  id: string;
+  title: string;
+  text: string;
+  icon: ReactNode;
+  accent: string;
 };
 
 function getAge(dateOfBirth?: string) {
@@ -36,6 +44,13 @@ export function BenefitsBoard() {
   const philhealthPin = beneficiary?.pin || (!beneficiary ? masterProfile.philhealthId : '');
   const age = getAge(dateOfBirth);
   const hasCurrentVisit = visitLog.patientId === activePatientId && Boolean(visitLog.checkedInAt);
+  const preferences = masterProfile.notificationPreferences || {
+    healthOpportunitiesEnabled: false,
+    seniorWellness: true,
+    philhealthPrograms: true,
+    vaccinations: true,
+    localHealthServices: true,
+  };
 
   const suggestions = useMemo<BenefitSuggestion[]>(() => {
     const items: BenefitSuggestion[] = [];
@@ -73,11 +88,55 @@ export function BenefitsBoard() {
     return items.slice(0, 3);
   }, [age, firstName, hasCurrentVisit, philhealthPin]);
 
+  const opportunities = useMemo<HealthOpportunity[]>(() => {
+    if (!preferences.healthOpportunitiesEnabled) return [];
+    const items: HealthOpportunity[] = [];
+
+    if (preferences.seniorWellness && age !== null && age >= 60) {
+      items.push({
+        id: 'senior-wellness',
+        title: `Senior wellness check for ${firstName}`,
+        text: 'Ask a Cebu City health center about available senior wellness checks. Schedules vary by facility.',
+        icon: <CalendarHeart color="#137A67" size={20} />,
+        accent: '#E6F5F1',
+      });
+    }
+    if (preferences.philhealthPrograms) {
+      items.push({
+        id: 'philhealth-programs',
+        title: 'Review PhilHealth coverage before the next visit',
+        text: 'Keep the PIN and supporting documents ready. The hospital or PhilHealth desk confirms eligibility.',
+        icon: <CircleDollarSign color="#A15C00" size={20} />,
+        accent: '#FFF3DD',
+      });
+    }
+    if (preferences.vaccinations) {
+      items.push({
+        id: 'vaccinations',
+        title: 'Check the recommended vaccination schedule',
+        text: `Ask a licensed clinician which vaccines fit ${firstName}'s age and health history.`,
+        icon: <Syringe color="#246BCE" size={20} />,
+        accent: '#EAF2FF',
+      });
+    }
+    if (preferences.localHealthServices) {
+      items.push({
+        id: 'local-services',
+        title: 'Cebu health services near you',
+        text: 'Start with your barangay or Cebu City health center for local programs and referral requirements.',
+        icon: <MapPin color="#137A67" size={20} />,
+        accent: '#E6F5F1',
+      });
+    }
+
+    return items.slice(0, 4);
+  }, [age, firstName, preferences]);
+
   return (
     <View style={styles.section}>
       <View style={styles.headingRow}>
         <View>
-          <Text style={styles.eyebrow}>BENEFITS YOU MIGHT NOT KNOW ABOUT</Text>
+          <Text style={styles.eyebrow}>HEALTH BENEFITS</Text>
           <Text style={styles.title}>Worth asking about for {firstName}</Text>
         </View>
         <View style={styles.countBadge}><Text style={styles.countText}>{suggestions.length}</Text></View>
@@ -119,10 +178,39 @@ export function BenefitsBoard() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.moreButton} onPress={() => router.push('/notifications')} accessibilityRole="button">
-        <Text style={styles.moreText}>See health opportunities</Text>
-        <ArrowRight color="#137A67" size={16} />
-      </TouchableOpacity>
+      <View style={styles.opportunityHeading}>
+        <Text style={styles.opportunityEyebrow}>OPTIONAL REMINDERS</Text>
+        <Text style={styles.opportunityTitle}>Health opportunities for {firstName}</Text>
+      </View>
+
+      {!preferences.healthOpportunitiesEnabled ? (
+        <View style={styles.opportunityEmpty}>
+          <View style={styles.opportunityEmptyIcon}><Bell color="#137A67" size={22} /></View>
+          <View style={styles.opportunityEmptyCopy}>
+            <Text style={styles.opportunityItemTitle}>Notifications are off</Text>
+            <Text style={styles.opportunityText}>Turn them on only for the categories you want.</Text>
+          </View>
+          <TouchableOpacity style={styles.settingsIconButton} onPress={() => router.push('/onboarding?edit=1')} accessibilityLabel="Review health opportunity settings">
+            <SlidersHorizontal color="#137A67" size={18} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.opportunityCard}>
+          {opportunities.map((opportunity, index) => (
+            <View key={opportunity.id} style={[styles.opportunityRow, index > 0 && styles.opportunityDivider]}>
+              <View style={[styles.opportunityIcon, { backgroundColor: opportunity.accent }]}>{opportunity.icon}</View>
+              <View style={styles.opportunityCopy}>
+                <Text style={styles.opportunityItemTitle}>{opportunity.title}</Text>
+                <Text style={styles.opportunityText}>{opportunity.text}</Text>
+              </View>
+            </View>
+          ))}
+          <TouchableOpacity style={styles.settingsButton} onPress={() => router.push('/onboarding?edit=1')} accessibilityRole="button">
+            <SlidersHorizontal color="#137A67" size={16} />
+            <Text style={styles.settingsText}>Notification settings</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -146,6 +234,20 @@ const styles = StyleSheet.create({
   detail: { fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 16, color: '#466379', backgroundColor: '#F3F7FC', borderRadius: 10, padding: 10, marginTop: 9 },
   honestyNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#E6F5F1', borderRadius: 12, padding: 11, marginBottom: 14 },
   honestyText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 9, lineHeight: 14, color: '#4F6D65' },
-  moreButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 6 },
-  moreText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: '#137A67' },
+  opportunityHeading: { marginTop: 24, marginBottom: 11 },
+  opportunityEyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 1.2, color: '#137A67', marginBottom: 4 },
+  opportunityTitle: { fontFamily: 'Sora_700Bold', fontSize: 17, color: '#18312B' },
+  opportunityEmpty: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE7E3', borderRadius: 18, padding: 14 },
+  opportunityEmptyIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E6F5F1' },
+  opportunityEmptyCopy: { flex: 1 },
+  settingsIconButton: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E6F5F1' },
+  opportunityCard: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE7E3', borderRadius: 20, paddingHorizontal: 14, overflow: 'hidden' },
+  opportunityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, paddingVertical: 14 },
+  opportunityDivider: { borderTopWidth: 1, borderTopColor: '#E8EFED' },
+  opportunityIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  opportunityCopy: { flex: 1 },
+  opportunityItemTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 11, lineHeight: 16, color: '#18312B' },
+  opportunityText: { fontFamily: 'Inter_400Regular', fontSize: 9, lineHeight: 14, color: '#667B75', marginTop: 3 },
+  settingsButton: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderTopWidth: 1, borderTopColor: '#E8EFED' },
+  settingsText: { fontFamily: 'Sora_600SemiBold', fontSize: 10, color: '#137A67' },
 });

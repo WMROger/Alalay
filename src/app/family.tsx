@@ -14,7 +14,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +22,7 @@ import {
   View,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppBottomNav } from '../components/AppBottomNav';
 import { Beneficiary, useStore } from '../store/useStore';
 
@@ -63,6 +63,7 @@ export default function FamilyScreen() {
   const beneficiaries = useStore((state) => state.beneficiaries);
   const addBeneficiary = useStore((state) => state.addBeneficiary);
   const updateBeneficiary = useStore((state) => state.updateBeneficiary);
+  const setActivePatient = useStore((state) => state.setActivePatient);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -166,7 +167,7 @@ export default function FamilyScreen() {
     : 'alalay://admission-profile';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
@@ -216,13 +217,14 @@ export default function FamilyScreen() {
               </View>
             </View>
             <View style={styles.cardActions}>
-              <TouchableOpacity style={styles.secondaryAction} onPress={() => router.push('/profile' as Href)}>
+              <TouchableOpacity style={styles.secondaryAction} onPress={() => router.push('/profile' as Href)} accessibilityRole="button">
                 <Text style={styles.secondaryActionText}>View details</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.qrAction, !selfPerson.pin && styles.actionDisabled]}
                 onPress={() => openQrConfirmation(selfPerson)}
                 disabled={!selfPerson.pin}
+                accessibilityRole="button"
               >
                 <QrCodeIcon color="#FFFFFF" size={18} />
                 <Text style={styles.qrActionText}>View QR</Text>
@@ -264,13 +266,21 @@ export default function FamilyScreen() {
                 </TouchableOpacity>
               </View>
               <View style={styles.cardActions}>
-                <TouchableOpacity style={styles.secondaryAction} onPress={() => openEditForm(beneficiary)}>
-                  <Text style={styles.secondaryActionText}>Edit details</Text>
+                <TouchableOpacity
+                  style={styles.secondaryAction}
+                  onPress={() => {
+                    setActivePatient(beneficiary.id);
+                    router.push(`/family-profile?person=${beneficiary.id}` as Href);
+                  }}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.secondaryActionText}>View profile</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.qrAction, !hasReadyProfile && styles.actionDisabled]}
                   onPress={() => openQrConfirmation(beneficiary)}
                   disabled={!hasReadyProfile}
+                  accessibilityRole="button"
                 >
                   <QrCodeIcon color="#FFFFFF" size={18} />
                   <Text style={styles.qrActionText}>View QR</Text>

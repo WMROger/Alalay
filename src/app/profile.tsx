@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Href, useRouter } from 'expo-router';
 import { ArrowRight, FileText, HeartPulse, LogOut, RotateCcw, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react-native';
-import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppBottomNav } from '../components/AppBottomNav';
 import { useStore } from '../store/useStore';
 
@@ -41,7 +42,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.eyebrow}>ACCOUNT</Text>
         <Text style={styles.title}>Profile</Text>

@@ -2,12 +2,18 @@ import { Href, useRouter } from 'expo-router';
 import {
   ArrowRight,
   Bell,
+  Building2,
   CheckCircle2,
+  Circle,
   ClipboardCheck,
+  Clock3,
   FileText,
   FlaskConical,
+  HeartHandshake,
+  MapPin,
   Plus,
   QrCode,
+  Radio,
   ReceiptText,
   ShieldCheck,
   Sparkles,
@@ -15,7 +21,6 @@ import {
 } from 'lucide-react-native';
 import { ReactNode } from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,10 +28,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppBottomNav } from '../components/AppBottomNav';
-import { AdmissionJourney } from '../components/AdmissionJourney';
-import { BenefitsBoard } from '../components/BenefitsBoard';
-import { MissingItemsBoard } from '../components/MissingItemsBoard';
 import { useStore } from '../store/useStore';
 
 const COLORS = {
@@ -74,6 +77,7 @@ function QuickAction({ title, description, icon, iconBackground, onPress, wide }
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
   const masterProfile = useStore((state) => state.masterProfile);
@@ -99,15 +103,21 @@ export default function DashboardScreen() {
   const hasStarted = completedChecks > 0;
   const isReady = completion === 100;
   const selectedBeneficiary = beneficiaries.find((beneficiary) => beneficiary.id === activePatientId);
-  const selectedPatientName = selectedBeneficiary
-    ? `${selectedBeneficiary.firstName} ${selectedBeneficiary.lastName}`
-    : `${masterProfile.firstName || 'Juan'} ${masterProfile.lastName}`.trim();
+  const hasSelectedVisit = visitLog.patientId === activePatientId
+    && Boolean(visitLog.hospitalName)
+    && visitLog.admissionSteps.length > 0;
+  const previewStep = hasSelectedVisit
+    ? visitLog.admissionSteps.find((step) => step.status === 'current')
+      || visitLog.admissionSteps.find((step) => step.status === 'pending')
+      || visitLog.admissionSteps[visitLog.admissionSteps.length - 1]
+    : null;
+  const totalJourneySteps = hasSelectedVisit ? visitLog.admissionSteps.length : 3;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+        contentContainerStyle={[styles.content, isWide && styles.contentWide, { paddingBottom: Math.max(52, insets.bottom + 36) }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
@@ -121,7 +131,7 @@ export default function DashboardScreen() {
           </View>
           <TouchableOpacity
             style={styles.notificationButton}
-            onPress={() => router.push('/notifications' as Href)}
+            onPress={() => router.push('/benefits' as Href)}
             accessibilityRole="button"
             accessibilityLabel="Notifications, one unread"
           >
@@ -130,7 +140,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.formCard}>
+        {!isReady && <View style={styles.formCard}>
           <View style={styles.formTopRow}>
             <View style={[styles.formBadge, isReady && styles.formBadgeReady]}>
               {isReady && <CheckCircle2 color="#FFFFFF" size={14} />}
@@ -163,11 +173,80 @@ export default function DashboardScreen() {
             <Text style={styles.formButtonText}>{isReady ? 'Review profile' : hasStarted ? 'Continue form' : 'Start form'}</Text>
             <ArrowRight color={COLORS.navy} size={19} />
           </TouchableOpacity>
+        </View>}
+
+        <View style={styles.nextSectionHeading}>
+          <View>
+            <Text style={styles.sectionEyebrow}>{hasSelectedVisit ? 'CURRENT VISIT' : 'HOSPITAL PREPARATION'}</Text>
+            <Text style={styles.sectionTitle}>What happens next</Text>
+          </View>
+          <Text style={styles.nextCount}>{totalJourneySteps}</Text>
         </View>
 
-        <AdmissionJourney />
-        <MissingItemsBoard />
-        <BenefitsBoard />
+        <View style={styles.nextCard}>
+          <View style={styles.nextCardHeader}>
+            <View style={styles.nextHospitalIcon}>
+              {hasSelectedVisit ? <Building2 color={COLORS.navy} size={22} /> : <ClipboardCheck color={COLORS.navy} size={22} />}
+            </View>
+            <View style={styles.nextHospitalCopy}>
+              <Text style={styles.nextHospitalName}>{hasSelectedVisit ? visitLog.hospitalName : `Preparing for ${selectedBeneficiary?.firstName || firstName}`}</Text>
+              <Text style={styles.nextHospitalMeta}>{hasSelectedVisit ? visitLog.deskName : 'Nothing is shared until you approve'}</Text>
+            </View>
+            <View style={styles.nextModeBadge}>
+              {hasSelectedVisit && visitLog.supportsLiveStatus
+                ? <Radio color={COLORS.primary} size={13} />
+                : <Clock3 color={COLORS.primary} size={13} />}
+              <Text style={styles.nextModeText}>{hasSelectedVisit && visitLog.supportsLiveStatus ? 'LIVE' : 'GUIDE'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.nextNotice}>
+            <Text style={styles.nextNoticeTitle}>
+              {hasSelectedVisit && visitLog.supportsLiveStatus
+                ? 'Updated by participating hospital staff'
+                : 'A simple guide for your next hospital step'}
+            </Text>
+            <Text style={styles.nextNoticeText}>
+              {hasSelectedVisit && visitLog.supportsLiveStatus
+                ? 'A staff update appears here when they complete a hospital step.'
+                : 'Review the patient profile before scanning the hospital desk QR.'}
+            </Text>
+          </View>
+
+          <View style={[styles.nextStepPreview, previewStep?.status === 'current' && styles.nextStepCurrent]}>
+            <View style={styles.nextStepRail}>
+              {previewStep?.status === 'done'
+                ? <CheckCircle2 color={COLORS.primary} size={23} />
+                : previewStep?.status === 'current'
+                  ? <Clock3 color={COLORS.amber} size={23} />
+                  : <Circle color={hasSelectedVisit ? '#AEBDB9' : COLORS.blue} size={22} />}
+            </View>
+            <View style={styles.nextStepCopy}>
+              <View style={styles.nextStepTitleRow}>
+                <Text style={[styles.nextStepTitle, previewStep?.status === 'current' && styles.nextStepTitleCurrent]} numberOfLines={2}>
+                  {previewStep?.title || 'Choose the patient profile'}
+                </Text>
+                <Text style={[styles.nextStepStatus, previewStep?.status === 'current' && styles.nextStepStatusCurrent]}>
+                  {previewStep?.status === 'done' ? 'DONE' : previewStep?.status === 'current' ? 'NEEDS YOU' : hasSelectedVisit ? 'WAITING' : 'NEXT'}
+                </Text>
+              </View>
+              <Text style={styles.nextStepGuidance} numberOfLines={2}>
+                {previewStep?.guidance || `Open ${selectedBeneficiary?.firstName || firstName}'s profile to review documents before check-in.`}
+              </Text>
+              {!!previewStep?.location && previewStep.status === 'current' && (
+                <View style={styles.nextStepLocation}>
+                  <MapPin color={COLORS.amber} size={13} />
+                  <Text style={styles.nextStepLocationText}>{previewStep.location}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.nextSeeMore} onPress={() => router.push('/admission')} accessibilityRole="button">
+            <Text style={styles.nextSeeMoreText}>{hasSelectedVisit ? `See all ${totalJourneySteps} steps and actions` : 'See the full preparation guide'}</Text>
+            <ArrowRight color={COLORS.primary} size={17} />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.sectionHeadingRow}>
           <View style={styles.sectionHeadingCopy}>
@@ -234,18 +313,6 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </ScrollView>
 
-        <View style={styles.selectedPatientBanner}>
-          <View style={styles.selectedPatientCopy}>
-            <Text style={styles.selectedPatientEyebrow}>SELECTED PATIENT</Text>
-            <Text style={styles.selectedPatientName}>{selectedPatientName}</Text>
-            <Text style={styles.selectedPatientText}>Hospital check-in and documents will use this profile.</Text>
-          </View>
-          <TouchableOpacity style={styles.checkInPatientButton} onPress={() => router.push('/qr')} accessibilityRole="button">
-            <QrCode color="#FFFFFF" size={18} />
-            <Text style={styles.checkInPatientText}>Check in</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={[styles.askAlalayCard, isWide && styles.askAlalayCardWide]}>
           <View style={[styles.askAlalayIcon, isWide && styles.askAlalayIconWide]}>
             <Sparkles color="#FFFFFF" size={23} />
@@ -290,6 +357,14 @@ export default function DashboardScreen() {
           />
           <QuickAction
             wide={isWide}
+            title="Health benefits"
+            description="Benefits and reminders"
+            iconBackground={COLORS.blueSoft}
+            icon={<HeartHandshake color={COLORS.blue} size={23} />}
+            onPress={() => router.push('/benefits' as Href)}
+          />
+          <QuickAction
+            wide={isWide}
             title="Documents"
             description="View patient files"
             iconBackground={COLORS.primarySoft}
@@ -326,6 +401,34 @@ const styles = StyleSheet.create({
   subGreeting: { fontFamily: 'Inter_400Regular', fontSize: 13, color: COLORS.muted, marginTop: 2 },
   notificationButton: { width: 46, height: 46, borderRadius: 16, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.line, alignItems: 'center', justifyContent: 'center' },
   notificationDot: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: '#E05252', borderWidth: 2, borderColor: '#FFFFFF' },
+
+  nextSectionHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8, marginBottom: 13 },
+  nextCount: { minWidth: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.primarySoft, color: COLORS.primary, textAlign: 'center', textAlignVertical: 'center', paddingTop: 6, fontFamily: 'Inter_600SemiBold', fontSize: 11, overflow: 'hidden' },
+  nextCard: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.line, borderRadius: 23, padding: 16, marginBottom: 28 },
+  nextCardHeader: { flexDirection: 'row', alignItems: 'center' },
+  nextHospitalIcon: { width: 45, height: 45, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EDF3F1' },
+  nextHospitalCopy: { flex: 1, marginLeft: 11, marginRight: 8 },
+  nextHospitalName: { fontFamily: 'Sora_600SemiBold', fontSize: 13, lineHeight: 17, color: COLORS.ink },
+  nextHospitalMeta: { fontFamily: 'Inter_400Regular', fontSize: 9, color: COLORS.muted, marginTop: 3 },
+  nextModeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.primarySoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
+  nextModeText: { fontFamily: 'Inter_600SemiBold', fontSize: 7, letterSpacing: 0.7, color: COLORS.primary },
+  nextNotice: { backgroundColor: COLORS.primarySoft, borderRadius: 14, padding: 11, marginTop: 14 },
+  nextNoticeTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: COLORS.primary },
+  nextNoticeText: { fontFamily: 'Inter_400Regular', fontSize: 9, lineHeight: 14, color: COLORS.muted, marginTop: 3 },
+  nextStepPreview: { minHeight: 82, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderColor: '#E4ECE9', borderRadius: 16, padding: 12, marginTop: 13 },
+  nextStepCurrent: { backgroundColor: COLORS.amberSoft, borderColor: '#F2D6A6' },
+  nextStepRail: { width: 28, alignItems: 'center', paddingTop: 1 },
+  nextStepCopy: { flex: 1 },
+  nextStepTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  nextStepTitle: { flex: 1, fontFamily: 'Sora_600SemiBold', fontSize: 12, lineHeight: 17, color: COLORS.ink },
+  nextStepTitleCurrent: { color: '#744100' },
+  nextStepStatus: { fontFamily: 'Inter_600SemiBold', fontSize: 7, letterSpacing: 0.45, color: COLORS.muted, backgroundColor: '#EDF2F0', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 5 },
+  nextStepStatusCurrent: { color: COLORS.amber, backgroundColor: '#FFFFFF' },
+  nextStepGuidance: { fontFamily: 'Inter_400Regular', fontSize: 9, lineHeight: 14, color: COLORS.muted, marginTop: 5 },
+  nextStepLocation: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  nextStepLocationText: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 9, color: COLORS.amber },
+  nextSeeMore: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: COLORS.primarySoft, borderRadius: 14, marginTop: 12 },
+  nextSeeMoreText: { fontFamily: 'Sora_600SemiBold', fontSize: 11, color: COLORS.primary },
 
   formCard: { backgroundColor: COLORS.navy, borderRadius: 27, padding: 22, marginBottom: 29, shadowColor: COLORS.navy, shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.16, shadowRadius: 16, elevation: 7 },
   formTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 17 },
@@ -364,14 +467,6 @@ const styles = StyleSheet.create({
   addPersonIcon: { width: 43, height: 43, borderRadius: 15, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   addPersonTitle: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: COLORS.primary },
   addPersonText: { fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 15, color: COLORS.muted, textAlign: 'center', marginTop: 4 },
-  selectedPatientBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.primarySoft, borderWidth: 1, borderColor: '#BFE4DB', borderRadius: 18, padding: 14, marginTop: 13 },
-  selectedPatientCopy: { flex: 1 },
-  selectedPatientEyebrow: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 1.1, color: COLORS.primary },
-  selectedPatientName: { fontFamily: 'Sora_600SemiBold', fontSize: 14, color: COLORS.ink, marginTop: 3 },
-  selectedPatientText: { fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 15, color: COLORS.muted, marginTop: 2 },
-  checkInPatientButton: { minHeight: 45, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: COLORS.primary, borderRadius: 14, paddingHorizontal: 14 },
-  checkInPatientText: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: '#FFFFFF' },
-
   askAlalayCard: { backgroundColor: COLORS.navy, borderRadius: 20, padding: 16, marginTop: 13 },
   askAlalayCardWide: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingHorizontal: 20 },
   askAlalayIcon: { width: 45, height: 45, borderRadius: 15, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },

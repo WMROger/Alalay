@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -188,6 +188,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ edit?: string; source?: string }>();
   const masterProfile = useStore((state) => state.masterProfile);
   const storedBeneficiaries = useStore((state) => state.beneficiaries);
@@ -522,7 +523,7 @@ export default function OnboardingScreen() {
         : 'Entered manually';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
         <View style={styles.navBar}>
           <TouchableOpacity style={styles.navButton} onPress={previousStep} accessibilityLabel="Go back">
@@ -1009,7 +1010,7 @@ export default function OnboardingScreen() {
         </ScrollView>
 
         {(step > 1 || enteredWithEgov) && !isAddingBeneficiary && (
-          <View style={styles.bottomBar}>
+          <View style={[styles.bottomBar, { paddingBottom: Math.max(15, insets.bottom + 10) }]}>
             <TouchableOpacity
               style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
               onPress={step < TOTAL_STEPS ? nextStep : handleFinish}

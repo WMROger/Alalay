@@ -188,7 +188,7 @@ export default function QRScreen() {
           title: `Add ${patient.name}’s Senior Citizen ID`,
           description: 'The ID was not available during check-in. Admission continued, but the hospital may need it before applying a senior discount.',
           status: 'open',
-          route: '/family',
+          route: `/family-profile?person=${patient.id}`,
           createdAt: new Date().toISOString(),
         });
       }

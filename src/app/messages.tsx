@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowRight, FlaskConical, MessageCircle, ReceiptText, ShieldCheck, Sparkles } from 'lucide-react-native';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppBottomNav } from '../components/AppBottomNav';
 
 const COLORS = {
@@ -22,7 +23,7 @@ export default function MessagesScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.eyebrow}>ALALAY ASSISTANT</Text>
         <Text style={styles.title}>Messages</Text>

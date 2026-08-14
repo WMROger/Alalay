@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Platform, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { FileJson, UploadCloud, CheckCircle2, ChevronLeft, Filter, GripVertical, PlayCircle, Edit2 } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { Href, useRouter } from 'expo-router';
 
-const DICTIONARY_GROUPS = [
+type TemplatePreset = 'vsmmc' | 'chonghua' | 'consent' | 'cf1';
+type DictionaryGroup = { title: string; fields: { id: string; label: string }[] };
+
+const ADMISSION_GROUPS: DictionaryGroup[] = [
   {
     title: 'I. PATIENT INFORMATION',
     fields: [
@@ -33,25 +37,106 @@ const DICTIONARY_GROUPS = [
   }
 ];
 
+const CONSENT_GROUPS: DictionaryGroup[] = [
+  {
+    title: 'I. PATIENT AND VISIT',
+    fields: [
+      { id: 'consent.patientName', label: 'Patient Name' },
+      { id: 'consent.approvedBy', label: 'Approved By' },
+      { id: 'consent.hospitalDesk', label: 'Hospital Desk' },
+      { id: 'consent.acknowledgedAt', label: 'Acknowledgment Timestamp' },
+    ],
+  },
+];
+
+const CF1_GROUPS: DictionaryGroup[] = [
+  {
+    title: 'I. MEMBER INFORMATION',
+    fields: [
+      { id: 'cf1.memberPin', label: 'Member PIN' },
+      { id: 'cf1.memberName', label: 'Member Name' },
+      { id: 'cf1.memberCategory', label: 'Member Category' },
+      { id: 'cf1.memberAddress', label: 'Member Address' },
+      { id: 'cf1.memberPhone', label: 'Member Contact Number' },
+      { id: 'cf1.employerName', label: 'Employer Name' },
+      { id: 'cf1.employerPen', label: 'Employer PEN' },
+    ],
+  },
+  {
+    title: 'II. PATIENT INFORMATION',
+    fields: [
+      { id: 'cf1.patientName', label: 'Patient Name' },
+      { id: 'cf1.relationship', label: 'Relationship to Member' },
+      { id: 'cf1.patientDob', label: 'Patient Date of Birth' },
+      { id: 'cf1.patientSex', label: 'Patient Sex' },
+      { id: 'cf1.patientPin', label: 'Patient PIN' },
+    ],
+  },
+  {
+    title: 'III. CONFINEMENT INFORMATION',
+    fields: [
+      { id: 'cf1.hospitalName', label: 'Health Care Institution' },
+      { id: 'cf1.admissionType', label: 'Admission Type' },
+      { id: 'cf1.admissionDate', label: 'Admission Date' },
+      { id: 'cf1.dischargeDate', label: 'Discharge Date' },
+    ],
+  },
+  {
+    title: 'IV. CERTIFICATION',
+    fields: [
+      { id: 'cf1.authorizedRepresentative', label: 'Authorized Representative' },
+      { id: 'cf1.signatureDate', label: 'Signature Date' },
+    ],
+  },
+];
+
+const TEMPLATE_GROUPS: Record<TemplatePreset, DictionaryGroup[]> = {
+  vsmmc: ADMISSION_GROUPS,
+  chonghua: ADMISSION_GROUPS,
+  consent: CONSENT_GROUPS,
+  cf1: CF1_GROUPS,
+};
+
+const TEMPLATE_LABELS: Record<TemplatePreset, string> = {
+  vsmmc: 'ER / Walk-in Admission',
+  chonghua: 'Specialist Registration',
+  consent: 'Patient Consent',
+  cf1: 'PhilHealth CF1',
+};
+
+const createFieldState = (groups: DictionaryGroup[]) => groups
+  .flatMap((group) => group.fields)
+  .reduce<Record<string, boolean>>((accumulator, field) => ({ ...accumulator, [field.id]: true }), {});
+
 export default function AdminTemplatesScreen() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const [viewMode, setViewMode] = useState<'dashboard' | 'studio'>('dashboard');
-  const [activePreset, setActivePreset] = useState<'vsmmc' | 'chonghua'>('vsmmc');
-  const [uploadTarget, setUploadTarget] = useState<'vsmmc' | 'chonghua'>('vsmmc');
+  const [activePreset, setActivePreset] = useState<TemplatePreset>('vsmmc');
+  const [uploadTarget, setUploadTarget] = useState<TemplatePreset>('vsmmc');
   const [availableTemplates, setAvailableTemplates] = useState<('vsmmc' | 'chonghua')[]>(['vsmmc']);
   const [isUploading, setIsUploading] = useState(false);
   const [isStudioUploading, setIsStudioUploading] = useState(false);
-  const [activeFields, setActiveFields] = useState<Record<string, boolean>>(
-    DICTIONARY_GROUPS.flatMap(g => g.fields).reduce((acc, field) => ({ ...acc, [field.id]: true }), {})
-  );
+  const [fieldsByTemplate, setFieldsByTemplate] = useState<Record<TemplatePreset, Record<string, boolean>>>(() => ({
+    vsmmc: createFieldState(ADMISSION_GROUPS),
+    chonghua: createFieldState(ADMISSION_GROUPS),
+    consent: createFieldState(CONSENT_GROUPS),
+    cf1: createFieldState(CF1_GROUPS),
+  }));
+  const activeFields = fieldsByTemplate[activePreset];
+  const activeGroups = TEMPLATE_GROUPS[activePreset];
 
   const toggleField = (id: string) => {
-    setActiveFields(prev => ({ ...prev, [id]: !prev[id] }));
+    setFieldsByTemplate((current) => ({
+      ...current,
+      [activePreset]: { ...current[activePreset], [id]: !current[activePreset][id] },
+    }));
   };
 
-  const openStudio = (preset: 'vsmmc' | 'chonghua') => {
+  const openStudio = (preset: TemplatePreset) => {
     setActivePreset(preset);
+    setUploadTarget(preset);
     setViewMode('studio');
   };
 
@@ -65,7 +150,7 @@ export default function AdminTemplatesScreen() {
     }, 2000);
   };
 
-  const simulateStudioUpload = (preset: 'vsmmc' | 'chonghua') => {
+  const simulateStudioUpload = (preset: TemplatePreset) => {
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
       input.type = 'file';
@@ -99,10 +184,11 @@ export default function AdminTemplatesScreen() {
     }
   };
 
-  const activeCount = Object.values(activeFields).filter(Boolean).length;
+  const countActiveFields = (preset: TemplatePreset) => Object.values(fieldsByTemplate[preset]).filter(Boolean).length;
+  const activeCount = countActiveFields(activePreset);
   const qrPayload = JSON.stringify({
-    h: activePreset === 'vsmmc' ? 'Vicente Sotto ER' : 'Chong Hua',
-    t: activePreset === 'vsmmc' ? 'general' : 'specialist',
+    h: activePreset === 'vsmmc' ? 'Vicente Sotto ER' : activePreset === 'chonghua' ? 'Chong Hua' : 'Vicente Sotto Memorial Medical Center',
+    t: activePreset,
     r: Object.entries(activeFields).filter(([k, v]) => v).map(([k]) => k)
   });
 
@@ -166,7 +252,7 @@ export default function AdminTemplatesScreen() {
                     <Text style={{color: 'white', fontWeight: 'bold'}}>V</Text>
                   </View>
                 </View>
-                <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>{activeCount} ACTIVE PARAMS</Text></View>
+                <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>{countActiveFields('vsmmc')} ACTIVE PARAMS</Text></View>
                 <View style={styles.cardActions}>
                   <TouchableOpacity style={styles.cardActionBtn}><PlayCircle color="#4A5568" size={16} /></TouchableOpacity>
                   <TouchableOpacity style={styles.cardActionBtn} onPress={() => openStudio('vsmmc')}><Edit2 color="#4A5568" size={16} /></TouchableOpacity>
@@ -195,7 +281,7 @@ export default function AdminTemplatesScreen() {
                     <View style={{width: 48, height: 48, backgroundColor: '#E53E3E', transform: [{rotate: '45deg'}]}} />
                   </View>
                 </View>
-                <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>{activeCount} ACTIVE PARAMS</Text></View>
+                <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>{countActiveFields('chonghua')} ACTIVE PARAMS</Text></View>
                 <View style={styles.cardActions}>
                   <TouchableOpacity style={styles.cardActionBtn}><PlayCircle color="#4A5568" size={16} /></TouchableOpacity>
                   <TouchableOpacity style={styles.cardActionBtn} onPress={() => openStudio('chonghua')}><Edit2 color="#4A5568" size={16} /></TouchableOpacity>
@@ -250,10 +336,20 @@ export default function AdminTemplatesScreen() {
                   <Text style={{color: 'white', fontWeight: 'bold', fontSize: 20}}>C</Text>
                 </View>
               </View>
-              <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>4 ACTIVE PARAMS</Text></View>
+              <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>{countActiveFields('consent')} ACTIVE PARAMS</Text></View>
               <View style={styles.cardActions}>
-                <TouchableOpacity style={styles.cardActionBtn}><PlayCircle color="#4A5568" size={16} /></TouchableOpacity>
-                <TouchableOpacity style={styles.cardActionBtn}><Edit2 color="#4A5568" size={16} /></TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cardActionBtn}
+                  onPress={() => router.push('/admin/triage?preview=consent' as Href)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Preview populated Patient Consent"
+                ><PlayCircle color="#4A5568" size={16} /></TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cardActionBtn}
+                  onPress={() => openStudio('consent')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit Patient Consent template"
+                ><Edit2 color="#4A5568" size={16} /></TouchableOpacity>
               </View>
             </View>
             <View style={styles.templateCardInfo}>
@@ -277,10 +373,20 @@ export default function AdminTemplatesScreen() {
                   <Text style={{color: 'white', fontWeight: 'bold', fontSize: 20}}>P</Text>
                 </View>
               </View>
-              <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>18 ACTIVE PARAMS</Text></View>
+              <View style={styles.mappedBadge}><Text style={styles.mappedBadgeText}>{countActiveFields('cf1')} ACTIVE PARAMS</Text></View>
               <View style={styles.cardActions}>
-                <TouchableOpacity style={styles.cardActionBtn}><PlayCircle color="#4A5568" size={16} /></TouchableOpacity>
-                <TouchableOpacity style={styles.cardActionBtn}><Edit2 color="#4A5568" size={16} /></TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cardActionBtn}
+                  onPress={() => router.push('/admin/triage?preview=cf1' as Href)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Preview populated PhilHealth CF1"
+                ><PlayCircle color="#4A5568" size={16} /></TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cardActionBtn}
+                  onPress={() => openStudio('cf1')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit PhilHealth CF1 template"
+                ><Edit2 color="#4A5568" size={16} /></TouchableOpacity>
               </View>
             </View>
             <View style={styles.templateCardInfo}>
@@ -316,7 +422,12 @@ export default function AdminTemplatesScreen() {
       scrollEnabled={isMobile}
     >
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => setViewMode('dashboard')}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => setViewMode('dashboard')}
+          accessibilityRole="button"
+          accessibilityLabel="Back to templates"
+        >
           <ChevronLeft color="#4A5568" size={24} />
         </TouchableOpacity>
         <View style={styles.headerIcon}>
@@ -324,7 +435,7 @@ export default function AdminTemplatesScreen() {
         </View>
         <View>
           <Text style={styles.title}>Smart Template Studio</Text>
-          <Text style={styles.subtitle}>Configure which Alalay parameters are required for this hospital form.</Text>
+          <Text style={styles.subtitle}>Editing {TEMPLATE_LABELS[activePreset]} · toggle the fields included in this template.</Text>
         </View>
       </View>
 
@@ -335,31 +446,40 @@ export default function AdminTemplatesScreen() {
           <Text style={styles.sidebarSub}>Toggle fields to require them in the patient's payload.</Text>
           
             <ScrollView style={styles.dictionaryList} showsVerticalScrollIndicator={false}>
-              {DICTIONARY_GROUPS.map((group, gIdx) => (
+              {activeGroups.map((group, gIdx) => (
                 <View key={gIdx} style={{marginBottom: 24}}>
                   <View style={styles.groupHeaderBadge}>
                     <Text style={styles.groupTitleText}>{group.title}</Text>
                   </View>
                   {group.fields.map((field) => (
-                    <View key={field.id} style={styles.toggleRow}>
+                    <TouchableOpacity
+                      key={field.id}
+                      style={styles.toggleRow}
+                      onPress={() => toggleField(field.id)}
+                      activeOpacity={0.82}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: activeFields[field.id] ?? false }}
+                      accessibilityLabel={`Include ${field.label}`}
+                    >
                       <View style={{flex: 1}}>
                         <Text style={styles.toggleLabel}>{field.label}</Text>
                         <Text style={styles.toggleId}>{field.id.replace('alalay.', '')}</Text>
                       </View>
                       <Switch 
-                        value={activeFields[field.id]} 
-                        onValueChange={(val) => setActiveFields(prev => ({...prev, [field.id]: val}))}
+                        accessible={false}
+                        style={{ pointerEvents: 'none' }}
+                        value={activeFields[field.id] ?? false}
                         trackColor={{ false: "#E2E8F0", true: "#00A389" }}
                         thumbColor="#FFFFFF"
                       />
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               ))}
               
               <View style={styles.qrMiniArea}>
                 <QRCode value={qrPayload} size={80} />
-                <Text style={styles.qrMiniText}>Live Schema</Text>
+                <Text style={styles.qrMiniText}>Live Schema · {activeCount} fields</Text>
               </View>
             </ScrollView>
         </View>
@@ -380,18 +500,25 @@ export default function AdminTemplatesScreen() {
             </View>
 
             <View style={styles.presetToggle}>
-              <TouchableOpacity 
-                style={[styles.presetBtn, uploadTarget === 'vsmmc' && styles.presetBtnActive]}
-                onPress={() => setUploadTarget('vsmmc')}
-              >
-                <Text style={[styles.presetBtnText, uploadTarget === 'vsmmc' && styles.presetBtnTextActive]}>1</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.presetBtn, uploadTarget === 'chonghua' && styles.presetBtnActive]}
-                onPress={() => setUploadTarget('chonghua')}
-              >
-                <Text style={[styles.presetBtnText, uploadTarget === 'chonghua' && styles.presetBtnTextActive]}>2</Text>
-              </TouchableOpacity>
+              {([
+                { id: 'vsmmc', label: 'ER' },
+                { id: 'chonghua', label: 'Specialist' },
+                { id: 'consent', label: 'Consent' },
+                { id: 'cf1', label: 'CF1' },
+              ] as { id: TemplatePreset; label: string }[]).map((preset) => (
+                <TouchableOpacity
+                  key={preset.id}
+                  style={[styles.presetBtn, uploadTarget === preset.id && styles.presetBtnActive]}
+                  onPress={() => {
+                    setUploadTarget(preset.id);
+                    setActivePreset(preset.id);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: activePreset === preset.id }}
+                >
+                  <Text style={[styles.presetBtnText, uploadTarget === preset.id && styles.presetBtnTextActive]}>{preset.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
@@ -466,7 +593,7 @@ export default function AdminTemplatesScreen() {
                 )}
               </View>
               </ScrollView>
-            ) : (
+            ) : activePreset === 'chonghua' ? (
               /* Chong Hua Dynamic Layout */
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={isMobile ? { width: '100%' } : {}}>
               <View style={styles.mockPdfChonghua}>
@@ -550,6 +677,69 @@ export default function AdminTemplatesScreen() {
                   )}
                 </View>
               </View>
+              </ScrollView>
+            ) : activePreset === 'consent' ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={isMobile ? { width: '100%' } : {}}>
+                <View style={styles.mockPdfConsent}>
+                  <View style={styles.consentStudioHeader}>
+                    <View style={styles.consentStudioMark}><Text style={styles.consentStudioMarkText}>A</Text></View>
+                    <View>
+                      <Text style={styles.consentStudioBrand}>ALALAY</Text>
+                      <Text style={styles.consentStudioMeta}>VISIT INFORMATION SHARING ACKNOWLEDGMENT</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.studioDocumentTitle}>Patient-authorized sharing record</Text>
+                  <Text style={styles.studioDocumentIntro}>Editable fields are highlighted in blue and populated from the patient-authorized visit snapshot.</Text>
+
+                  <Text style={styles.studioSectionBar}>SHARING DETAILS</Text>
+                  {CONSENT_GROUPS[0].fields.filter((field) => activeFields[field.id]).map((field) => (
+                    <View key={field.id} style={styles.consentStudioRow}>
+                      <Text style={styles.consentStudioLabel}>{field.label}</Text>
+                      <Text style={styles.consentStudioValue}>{field.id.replace('consent.', '')}</Text>
+                    </View>
+                  ))}
+
+                  <View style={styles.consentStudioStatement}>
+                    <CheckCircle2 color="#137A67" size={18} />
+                    <Text style={styles.consentStudioStatementText}>Patient-authorized sharing statement and disclosure list remain required legal copy.</Text>
+                  </View>
+                  <View style={styles.studioSignatureRow}>
+                    <View style={styles.studioSignatureBlock}><View style={styles.studioSignatureLine} /><Text style={styles.studioSignatureLabel}>Digitally acknowledged by</Text></View>
+                    <View style={styles.studioSignatureBlock}><View style={styles.studioSignatureLine} /><Text style={styles.studioSignatureLabel}>Date</Text></View>
+                  </View>
+                </View>
+              </ScrollView>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={isMobile ? { width: '100%' } : {}}>
+                <View style={styles.mockPdfCf1}>
+                  <View style={styles.cf1StudioHeader}>
+                    <View>
+                      <Text style={styles.cf1Republic}>Republic of the Philippines</Text>
+                      <Text style={styles.cf1Agency}>PHILIPPINE HEALTH INSURANCE CORPORATION</Text>
+                      <Text style={styles.cf1FormName}>CF1 · MEMBER AND PATIENT INFORMATION</Text>
+                    </View>
+                    <View style={styles.cf1Badge}><Text style={styles.cf1BadgeText}>CF1</Text></View>
+                  </View>
+                  <View style={styles.cf1Notice}><Text style={styles.cf1NoticeText}>CONFIGURABLE REFERENCE PREVIEW · OFFICIAL FORM STILL REQUIRES VERIFICATION</Text></View>
+
+                  {CF1_GROUPS.map((group) => {
+                    const enabledFields = group.fields.filter((field) => activeFields[field.id]);
+                    if (enabledFields.length === 0) return null;
+                    return (
+                      <View key={group.title} style={styles.cf1StudioSection}>
+                        <Text style={styles.studioSectionBar}>{group.title}</Text>
+                        <View style={styles.cf1StudioGrid}>
+                          {enabledFields.map((field) => (
+                            <View key={field.id} style={styles.cf1StudioField}>
+                              <Text style={styles.cf1StudioLabel}>{field.label}</Text>
+                              <Text style={styles.cf1StudioValue}>{field.id.replace('cf1.', '')}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
               </ScrollView>
             )}
           </View>
@@ -651,4 +841,40 @@ const styles = StyleSheet.create({
   chRow: { flexDirection: 'row', alignItems: 'flex-end' },
   chLabel: { fontFamily: 'Arial', fontSize: 14, color: '#2D3748', width: 120 },
   chLine: { flex: 1, borderBottomWidth: 1, borderBottomColor: '#CBD5E0', marginLeft: 8, paddingBottom: 4 },
+
+  /* Patient Consent Studio Mock */
+  mockPdfConsent: { width: 650, minHeight: 720, backgroundColor: '#FFFFFF', padding: 38, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 },
+  consentStudioHeader: { flexDirection: 'row', alignItems: 'center', gap: 13, borderBottomWidth: 1, borderBottomColor: '#CBD5E0', paddingBottom: 16, marginBottom: 24 },
+  consentStudioMark: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#137A67' },
+  consentStudioMarkText: { fontFamily: 'Sora_700Bold', fontSize: 20, color: '#FFFFFF' },
+  consentStudioBrand: { fontFamily: 'Sora_700Bold', fontSize: 17, color: '#173B4A' },
+  consentStudioMeta: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 0.7, color: '#718096', marginTop: 3 },
+  studioDocumentTitle: { fontFamily: 'Sora_700Bold', fontSize: 23, color: '#173B4A' },
+  studioDocumentIntro: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: '#718096', marginTop: 7, marginBottom: 20 },
+  studioSectionBar: { fontFamily: 'Inter_700Bold', fontSize: 9, letterSpacing: 0.7, color: '#FFFFFF', backgroundColor: '#334E68', paddingHorizontal: 10, paddingVertical: 7, marginBottom: 8 },
+  consentStudioRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingVertical: 11 },
+  consentStudioLabel: { width: 180, fontFamily: 'Inter_600SemiBold', fontSize: 10, color: '#4A5568' },
+  consentStudioValue: { flex: 1, fontFamily: 'Courier New', fontWeight: 'bold', fontSize: 12, color: '#2B6CB0' },
+  consentStudioStatement: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#E6F5F1', borderRadius: 10, padding: 14, marginTop: 20 },
+  consentStudioStatementText: { flex: 1, fontFamily: 'Inter_500Medium', fontSize: 10, lineHeight: 16, color: '#173B4A' },
+  studioSignatureRow: { flexDirection: 'row', gap: 28, marginTop: 58 },
+  studioSignatureBlock: { flex: 1, alignItems: 'center' },
+  studioSignatureLine: { width: '100%', height: 1, backgroundColor: '#4A5568' },
+  studioSignatureLabel: { fontFamily: 'Inter_400Regular', fontSize: 9, color: '#718096', marginTop: 6 },
+
+  /* CF1 Studio Mock */
+  mockPdfCf1: { width: 700, minHeight: 820, backgroundColor: '#FFFFFF', padding: 38, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 },
+  cf1StudioHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 },
+  cf1Republic: { fontFamily: 'Inter_400Regular', fontSize: 9, color: '#4A5568' },
+  cf1Agency: { fontFamily: 'Sora_700Bold', fontSize: 15, color: '#1A202C', marginTop: 3 },
+  cf1FormName: { fontFamily: 'Inter_600SemiBold', fontSize: 9, letterSpacing: 0.7, color: '#4A5568', marginTop: 4 },
+  cf1Badge: { width: 50, height: 50, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#D69E2E' },
+  cf1BadgeText: { fontFamily: 'Sora_700Bold', fontSize: 15, color: '#FFFFFF' },
+  cf1Notice: { backgroundColor: '#EBF4FF', borderWidth: 1, borderColor: '#BFD4F3', borderRadius: 7, padding: 9, marginBottom: 18 },
+  cf1NoticeText: { fontFamily: 'Inter_600SemiBold', fontSize: 8, letterSpacing: 0.6, color: '#246BCE', textAlign: 'center' },
+  cf1StudioSection: { marginBottom: 14 },
+  cf1StudioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  cf1StudioField: { flexGrow: 1, flexBasis: '47%', minHeight: 55, borderWidth: 1, borderColor: '#CBD5E0', padding: 9 },
+  cf1StudioLabel: { fontFamily: 'Inter_500Medium', fontSize: 7, letterSpacing: 0.45, color: '#718096', textTransform: 'uppercase' },
+  cf1StudioValue: { fontFamily: 'Courier New', fontWeight: 'bold', fontSize: 11, color: '#2B6CB0', marginTop: 7 },
 });

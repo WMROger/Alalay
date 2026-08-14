@@ -6,8 +6,9 @@ import { useStore } from '../store/useStore';
 export function MissingItemsBoard() {
   const router = useRouter();
   const pendingActions = useStore((state) => state.pendingActions);
+  const activePatientId = useStore((state) => state.activePatientId);
   const updatePendingAction = useStore((state) => state.updatePendingAction);
-  const openItems = pendingActions.filter((action) => action.status === 'open');
+  const openItems = pendingActions.filter((action) => action.patientId === activePatientId && action.status === 'open');
 
   if (openItems.length === 0) return null;
 
